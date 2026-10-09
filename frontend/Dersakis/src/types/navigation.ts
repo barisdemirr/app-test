@@ -4,6 +4,7 @@ export type Screen =
   | "new"
   | "rewards"
   | "profile"
-  | "list";
+  | "list"
+  | "live";
 
-export type SheetName = "" | "quiz" | "ask" | "question" | "filter" | "notifications";
+export type SheetName = "" | "quiz" | "ask" | "question" | "filter" | "notifications" | "voiceCreate" | "lessonCreate";

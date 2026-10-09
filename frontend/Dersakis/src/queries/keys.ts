@@ -18,6 +18,10 @@ export const queryKeys = {
   notifications: ["notifications"] as const,
   notificationsBadge: ["notifications", "badge"] as const,
   notificationsList: ["notifications", "list"] as const,
+  live: ["live"] as const,
+  liveList: (kind: string, scope: string, courseIds: string[]) =>
+    ["live", "list", kind, scope, courseIds] as const,
+  liveSession: (id: string) => ["live", "session", id] as const,
   quiz: (videoId: string) => ["quiz", videoId] as const,
   savedVideos: ["saved-videos"] as const,
 };

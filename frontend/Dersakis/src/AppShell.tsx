@@ -15,6 +15,8 @@ import {
   QuestionSheet,
   QuizSheet,
   NotificationsSheet,
+  CreateVoiceSheet,
+  CreateLessonSheet,
 } from "@/components/sheets";
 import {
   CreateScreen,
@@ -22,13 +24,13 @@ import {
   FeedScreen,
   HomeScreen,
   ListScreen,
+  LiveSessionScreen,
   ProfileScreen,
   RewardsScreen,
 } from "@/screens";
-import { lessons } from "@/mocks";
 import { Toast } from "@/components/ui";
 import { useMemo } from "react";
-import { flattenQa, useQaQuestions, useUnreadCount } from "@/queries";
+import { flattenQa, useLiveList, useQaQuestions, useUnreadCount } from "@/queries";
 import { usePushRegistration } from "@/push";
 
 const NAV_H = 67;
@@ -43,21 +45,11 @@ export function AppShell() {
   const navTop = navBottom + NAV_WRAP;
   const bodyPad = navTop + 24;
 
-  // derived lists
-  const filteredLessons = useMemo(() => {
-    return lessons.filter(
-      (x) =>
-        a.selectedCourses.includes(x.course) &&
-        (a.courseFilter === "Tümü" || x.course === a.courseFilter) &&
-        `${x.title} ${x.teacher} ${x.course}`
-          .toLowerCase()
-          .includes(a.searchText.toLowerCase()),
-    );
-  }, [a.selectedCourses, a.courseFilter, a.searchText]);
-
-  // Cihaz kaydı + push dinleyicileri. Bildirime dokununca kutu açılır.
-  // TODO(aşama 11): sessionId varsa doğrudan canlı oturum ekranına git.
-  usePushRegistration(() => a.setSheet("notifications"));
+  // Cihaz kaydı + push dinleyicileri. Bildirime dokununca ilgili oturum (yoksa kutu) açılır.
+  // Ekran açılınca güncel durum yine sunucudan çekilir (bildirim eski olabilir).
+  usePushRegistration((d) =>
+    d.sessionId ? a.openSession(d.sessionId) : a.setSheet("notifications"),
+  );
   const unreadQ = useUnreadCount();
 
   // Bilene sor: kategori filtresi ve arama sunucuda yapılır (arama debounce'lu)
@@ -76,12 +68,27 @@ export function AppShell() {
     enabled: a.ready && a.screen === "list" && a.listType === "questions",
   });
 
-  const lk = a.searchText.toLowerCase();
-  const listLessons = lessons.filter(
-    (x) =>
-      a.selectedCourses.includes(x.course) &&
-      `${x.title} ${x.course} ${x.teacher}`.toLowerCase().includes(lk),
-  );
+  // Canlı oturumlar: ders filtresini biz ekleriz (rapor: courseIds'i her liste isteğine ekle)
+  const courseIdOf = (name: string) => a.courses.find((c) => c.name === name)?.id;
+  const liveCourseIds =
+    a.courseFilter === "Tümü"
+      ? a.selectedCourseIds
+      : [courseIdOf(a.courseFilter)].filter((x): x is string => !!x);
+  const onHome = a.ready && a.screen === "home";
+  const voiceQ = useLiveList({ kind: "Voice", scope: "open", courseIds: liveCourseIds, pageSize: 10, enabled: onHome });
+  const lessonQ = useLiveList({ kind: "Lesson", scope: "open", courseIds: liveCourseIds, pageSize: 10, enabled: onHome });
+  const activeQ = useLiveList({ scope: "active", pageSize: 10, enabled: onHome, refetchMs: 30_000 });
+  const listKind = a.listType === "lessons" ? "Lesson" : a.listType === "voice" ? "Voice" : undefined;
+  const listLiveQ = useLiveList({
+    kind: listKind,
+    scope: a.listType === "mine" ? "mine" : "open",
+    courseIds: a.listType === "mine" ? undefined : a.selectedCourseIds,
+    enabled: a.ready && a.screen === "list" && a.listType !== "questions",
+  });
+  const flatLive = (q: typeof voiceQ) => q.data?.pages.flatMap((pg) => pg.items) ?? [];
+  const lk = a.searchText.trim().toLowerCase();
+  const matches = (x: { title: string; courseName: string; host: { displayName: string } }) =>
+    !lk || `${x.title} ${x.courseName} ${x.host.displayName}`.toLowerCase().includes(lk);
 
   const showHeader =
     a.screen === "home" ||
@@ -118,10 +125,15 @@ export function AppShell() {
             userName={user?.displayName ?? ""}
             accuracyPct={a.accuracyPct}
             selectedCourses={a.selectedCourses}
-            joinedCourses={a.joinedCourses}
             searchText={a.searchText}
             courseFilter={a.courseFilter}
-            filteredLessons={filteredLessons}
+            activeSessions={flatLive(activeQ)}
+            voiceSessions={flatLive(voiceQ).filter(matches)}
+            lessonSessions={flatLive(lessonQ).filter(matches)}
+            liveLoading={voiceQ.isLoading || lessonQ.isLoading}
+            onOpenSession={a.openSession}
+            onCreateVoice={() => a.setSheet("voiceCreate")}
+            onCreateLesson={() => a.setSheet("lessonCreate")}
             filteredQuestions={flattenQa(homeQ.data)}
             questionsLoading={homeQ.isLoading}
             bodyPad={bodyPad}
@@ -132,7 +144,6 @@ export function AppShell() {
             onOpenFeed={() => a.goTab("feed")}
             onOpenQuestion={(q) => a.openQuestion(q.id)}
             onOpenAsk={() => a.setSheet("ask")}
-            onJoinCourse={a.joinCourse}
           />
         )}
 
@@ -199,13 +210,31 @@ export function AppShell() {
           />
         )}
 
+        {a.screen === "live" && a.liveSessionId && (
+          <LiveSessionScreen
+            id={a.liveSessionId}
+            topInset={insets.top}
+            bodyPad={bodyPad}
+            credits={a.credits}
+            onBack={() => a.setScreen("home")}
+            // TODO(aşama 12): POST /live/{id}/join + Agora kanalına gir
+            onJoin={() => a.showToast("Görüşme ekranı bir sonraki adımda bağlanacak")}
+            showToast={a.showToast}
+          />
+        )}
+
         {a.screen === "list" && (
           <ListScreen
             topInset={insets.top}
             bodyPad={bodyPad}
             listType={a.listType}
             searchText={a.searchText}
-            listLessons={listLessons}
+            liveItems={flatLive(listLiveQ).filter(matches)}
+            liveLoading={listLiveQ.isLoading}
+            hasMoreLive={!!listLiveQ.hasNextPage}
+            loadingMoreLive={listLiveQ.isFetchingNextPage}
+            onLoadMoreLive={() => listLiveQ.fetchNextPage()}
+            onOpenSession={a.openSession}
             listQuestions={flattenQa(listQ.data)}
             questionsLoading={listQ.isLoading}
             hasMoreQuestions={!!listQ.hasNextPage}
@@ -242,9 +271,28 @@ export function AppShell() {
         <NotificationsSheet
           toast={a.toast}
           onClose={() => a.setSheet("")}
-          onOpenNotification={() => {
-            // TODO(aşama 11): n.data?.sessionId varsa canlı oturum ekranını aç
+          onOpenNotification={(n) => {
+            if (n.data?.sessionId) a.openSession(n.data.sessionId);
           }}
+        />
+      )}
+
+      {a.sheet === "voiceCreate" && (
+        <CreateVoiceSheet
+          toast={a.toast}
+          credits={a.credits}
+          defaultCourseId={a.selectedCourseIds[0] ?? ""}
+          onClose={() => a.setSheet("")}
+          onCreated={a.openSession}
+        />
+      )}
+
+      {a.sheet === "lessonCreate" && (
+        <CreateLessonSheet
+          toast={a.toast}
+          defaultCourseId={a.selectedCourseIds[0] ?? ""}
+          onClose={() => a.setSheet("")}
+          onCreated={a.openSession}
         />
       )}
 

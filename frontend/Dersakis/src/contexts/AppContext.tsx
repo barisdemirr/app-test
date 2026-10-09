@@ -58,8 +58,6 @@ export type AppContextValue = {
   selectedCourses: string[];
   selectedCourseIds: string[];
   toggleCourse: (c: string) => void;
-  joinedCourses: string[];
-  joinCourse: (title: string) => void;
   interests: string[];
   availableInterests: string[];
   toggleInterest: (c: string) => void;
@@ -81,8 +79,12 @@ export type AppContextValue = {
   setSearchText: (v: string) => void;
   courseFilter: string;
   setCourseFilter: (c: string) => void;
-  listType: "lessons" | "questions";
-  openList: (t: "lessons" | "questions") => void;
+  listType: "lessons" | "voice" | "mine" | "questions";
+  openList: (t: "lessons" | "voice" | "mine" | "questions") => void;
+
+  // ---- canlı oturumlar ----
+  liveSessionId: string | null;
+  openSession: (id: string) => void;
 
   // ---- create form ----
   video: PickedVideo | null;
@@ -163,8 +165,6 @@ export function AppProvider({
     correct: statsQ.data?.correct ?? 0,
   };
 
-  const [joinedCourses, setJoinedCourses] = useState<string[]>([]);
-
   const [quizVideo, setQuizVideo] = useState<{ id: string; courseName: string } | null>(null);
   const openQuiz = (v: { id: string; courseName: string }) => {
     setQuizVideo(v);
@@ -180,7 +180,8 @@ export function AppProvider({
   // list/search
   const [searchText, setSearchText] = useState("");
   const [courseFilter, setCourseFilter] = useState("Tümü");
-  const [listType, setListType] = useState<"lessons" | "questions">("lessons");
+  const [listType, setListType] = useState<"lessons" | "voice" | "mine" | "questions">("lessons");
+  const [liveSessionId, setLiveSessionId] = useState<string | null>(null);
 
   // create form
   const [video, setVideo] = useState<PickedVideo | null>(null);
@@ -249,9 +250,6 @@ export function AppProvider({
 
   const onboarded = ready && selectedCourseIds.length > 0;
 
-  const joinCourse = (title: string) =>
-    setJoinedCourses((j) => (j.includes(title) ? j : [...j, title]));
-
   const openFeed = useCallback((source: FeedSource = { kind: "feed" }) => {
     setFeedSource(source);
     setSheet("");
@@ -269,7 +267,13 @@ export function AppProvider({
     setSheet("question");
   };
 
-  const openList = (t: "lessons" | "questions") => {
+  const openSession = (id: string) => {
+    setLiveSessionId(id);
+    setSheet("");
+    setScreen("live");
+  };
+
+  const openList = (t: "lessons" | "voice" | "mine" | "questions") => {
     setListType(t);
     setSearchText("");
     setScreen("list");
@@ -364,8 +368,6 @@ export function AppProvider({
     selectedCourses,
     selectedCourseIds,
     toggleCourse,
-    joinedCourses,
-    joinCourse,
     interests,
     availableInterests,
     toggleInterest,
@@ -385,6 +387,8 @@ export function AppProvider({
     setCourseFilter,
     listType,
     openList,
+    liveSessionId,
+    openSession,
 
     video,
     pickVideo,

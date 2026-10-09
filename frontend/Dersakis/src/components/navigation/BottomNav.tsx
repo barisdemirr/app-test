@@ -21,7 +21,7 @@ export type BottomNavProps = {
 };
 
 export function BottomNav(p: BottomNavProps) {
-  const currentTab: Screen = p.screen === "list" ? "home" : p.screen;
+  const currentTab: Screen = p.screen === "list" || p.screen === "live" ? "home" : p.screen;
 
   const navItems: {
     id: Screen;

@@ -9,7 +9,8 @@ import {
   Sparkles,
 } from "lucide-react-native";
 import { C, DIAG, FONT, fin, G_PRIMARY, SH } from "@/theme";
-import type { Lesson } from "@/types";
+import type { LiveSessionDto } from "@/api/types";
+import { ActiveStrip, LiveShelf } from "@/components/live";
 import type { QaQuestion } from "@/api/qa";
 import { colorFor, initialsOf } from "@/utils/user";
 import { useCourseNames } from "@/queries";
@@ -31,21 +32,25 @@ export type HomeScreenProps = {
   userName: string;
   accuracyPct: number;
   selectedCourses: string[];
-  joinedCourses: string[];
   searchText: string;
   courseFilter: string;
-  filteredLessons: Lesson[];
+  activeSessions: LiveSessionDto[];
+  voiceSessions: LiveSessionDto[];
+  lessonSessions: LiveSessionDto[];
+  liveLoading: boolean;
+  onOpenSession: (id: string) => void;
+  onCreateVoice: () => void;
+  onCreateLesson: () => void;
   filteredQuestions: QaQuestion[];
   questionsLoading: boolean;
   bodyPad: number;
   onSearchChange: (v: string) => void;
   onCourseFilterChange: (c: string) => void;
   onOpenFilter: () => void;
-  onOpenList: (t: "lessons" | "questions") => void;
+  onOpenList: (t: "lessons" | "voice" | "mine" | "questions") => void;
   onOpenFeed: () => void;
   onOpenQuestion: (q: QaQuestion) => void;
   onOpenAsk: () => void;
-  onJoinCourse: (title: string) => void;
 };
 
 export function HomeScreen(p: HomeScreenProps) {
@@ -239,158 +244,37 @@ export function HomeScreen(p: HomeScreenProps) {
         ))}
       </ScrollView>
 
+      {/* DEVAM EDEN / YAKLAŞAN */}
+      <ActiveStrip items={p.activeSessions} onOpen={p.onOpenSession} />
+
+      {/* SESLİ SORULAR */}
+      <LiveShelf
+        title="Sesli sorular"
+        action="Tümünü gör"
+        onSeeAll={() => p.onOpenList("voice")}
+        items={p.voiceSessions}
+        loading={p.liveLoading}
+        empty="Şu an açık sesli soru yok."
+        onOpen={p.onOpenSession}
+      />
+      <View style={{ flexDirection: "row", gap: 8, marginTop: -4, marginBottom: 6 }}>
+        <GradBtn label="＋ Sesli soru sor" small colors={G_PRIMARY} radius={{ borderRadius: 999 }} onPress={p.onCreateVoice} />
+      </View>
+
       {/* EĞİTİMLER */}
-      <SectionTitle
+      <LiveShelf
         title="Eğitimler"
         action="Tümünü gör"
-        onAction={() => p.onOpenList("lessons")}
+        onSeeAll={() => p.onOpenList("lessons")}
+        items={p.lessonSessions}
+        loading={p.liveLoading}
+        empty="Aramana uygun eğitim bulunamadı."
+        onOpen={p.onOpenSession}
       />
-      {p.filteredLessons.length === 0 ? (
-        <T style={{ color: C.muted, fontSize: 12 }}>
-          Aramana uygun eğitim bulunamadı.
-        </T>
-      ) : (
-        <FlatList
-          horizontal
-          data={p.filteredLessons}
-          keyExtractor={(i) => i.title}
-          showsHorizontalScrollIndicator={false}
-          snapToInterval={299}
-          decelerationRate="fast"
-          style={{ marginHorizontal: -20 }}
-          contentContainerStyle={{
-            paddingHorizontal: 20,
-            paddingBottom: 14,
-            gap: 13,
-          }}
-          renderItem={({ item }) => {
-            const joined = p.joinedCourses.includes(item.title);
-            return (
-              <View
-                style={[
-                  fin,
-                  {
-                    width: 286,
-                    backgroundColor: "#fff",
-                    overflow: "hidden",
-                    borderWidth: 1,
-                    borderColor: "rgba(220,234,247,.8)",
-                  },
-                  SH.card,
-                ]}
-              >
-                <LinearGradient
-                  colors={[C.abyss, item.color, C.lagoon]}
-                  {...DIAG}
-                  style={{ height: 82, padding: 15, overflow: "hidden" }}
-                >
-                  <View
-                    style={{
-                      position: "absolute",
-                      right: 20,
-                      top: 5,
-                      opacity: 0.55,
-                    }}
-                  >
-                    <Sonar size={76} />
-                  </View>
-                  <View
-                    style={{
-                      alignSelf: "flex-start",
-                      paddingHorizontal: 10,
-                      paddingVertical: 6,
-                      borderRadius: 999,
-                      backgroundColor: "rgba(255,255,255,.2)",
-                    }}
-                  >
-                    <T f="bb" style={{ color: "#fff", fontSize: 10 }}>
-                      {item.course}
-                    </T>
-                  </View>
-                  <T
-                    style={{
-                      position: "absolute",
-                      right: 14,
-                      top: 13,
-                      fontSize: 10,
-                      color: "rgba(255,255,255,.8)",
-                    }}
-                  >
-                    DERSAKIŞ • 01
-                  </T>
-                </LinearGradient>
-                <View style={{ padding: 15 }}>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 9,
-                    }}
-                  >
-                    <Avatar initials={item.initials} color={item.color} size={32} />
-                    <View style={{ flex: 1 }}>
-                      <T f="bb" style={{ fontSize: 12 }}>
-                        {item.teacher}
-                      </T>
-                      <T
-                        style={{ fontSize: 10, color: C.muted }}
-                        numberOfLines={1}
-                      >
-                        {item.role}
-                      </T>
-                    </View>
-                  </View>
-                  <T
-                    f="h"
-                    style={{
-                      fontSize: 17,
-                      lineHeight: 20,
-                      marginTop: 12,
-                      marginBottom: 6,
-                      minHeight: 40,
-                    }}
-                    numberOfLines={2}
-                  >
-                    {item.title}
-                  </T>
-                  <T
-                    style={{
-                      fontSize: 11,
-                      color: C.muted,
-                      lineHeight: 17,
-                      minHeight: 51,
-                    }}
-                    numberOfLines={3}
-                  >
-                    {item.desc}
-                  </T>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      gap: 6,
-                      marginTop: 12,
-                      marginBottom: 12,
-                    }}
-                  >
-                    <MiniPill label={item.course} color={C.tide} />
-                    <MiniPill label="5 soru" />
-                    <MiniPill label={item.time} />
-                  </View>
-                  <GradBtn
-                    label={joined ? "✓ Katıldın" : "Eğitime katıl"}
-                    colors={
-                      joined
-                        ? ([C.success, C.success] as const)
-                        : undefined
-                    }
-                    onPress={() => !joined && p.onJoinCourse(item.title)}
-                  />
-                </View>
-              </View>
-            );
-          }}
-        />
-      )}
+      <View style={{ flexDirection: "row", gap: 8, marginTop: -4, marginBottom: 6 }}>
+        <GradBtn label="＋ Eğitim ver" small colors={G_PRIMARY} radius={{ borderRadius: 999 }} onPress={p.onCreateLesson} />
+        <GradBtn label="Oturumlarım" small colors={[C.tide, C.tide]} radius={{ borderRadius: 999 }} onPress={() => p.onOpenList("mine")} />
+      </View>
 
       {/* BİLENE SOR */}
       <SectionTitle

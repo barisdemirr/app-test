@@ -5,3 +5,5 @@ export * from "./FilterSheet";
 export * from "./OnboardingSheet";
 export * from "./RedeemSheet";
 export * from "./NotificationsSheet";
+export * from "./CreateVoiceSheet";
+export * from "./CreateLessonSheet";

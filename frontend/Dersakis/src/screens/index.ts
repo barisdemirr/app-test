@@ -4,3 +4,4 @@ export * from "./CreateScreen";
 export * from "./RewardsScreen";
 export * from "./ProfileScreen";
 export * from "./ListScreen";
+export * from "./LiveSessionScreen";

@@ -2,16 +2,22 @@ import React from "react";
 import { ScrollView, TextInput, View } from "react-native";
 import { ArrowLeft, PlayCircle, Search } from "lucide-react-native";
 import { C, FONT, SH } from "@/theme";
-import type { Lesson } from "@/types";
+import type { LiveSessionDto } from "@/api/types";
+import { LiveCard } from "@/components/live";
 import type { QaQuestion } from "@/api/qa";
 import { Avatar, Press, Sonar, T } from "@/components/ui";
 
 export type ListScreenProps = {
   topInset: number;
   bodyPad: number;
-  listType: "lessons" | "questions";
+  listType: "lessons" | "voice" | "mine" | "questions";
   searchText: string;
-  listLessons: Lesson[];
+  liveItems: LiveSessionDto[];
+  liveLoading: boolean;
+  hasMoreLive: boolean;
+  loadingMoreLive: boolean;
+  onLoadMoreLive: () => void;
+  onOpenSession: (id: string) => void;
   listQuestions: QaQuestion[];
   questionsLoading: boolean;
   hasMoreQuestions: boolean;
@@ -24,9 +30,9 @@ export type ListScreenProps = {
 
 export function ListScreen(p: ListScreenProps) {
   const listEmpty =
-    p.listType === "lessons"
-      ? p.listLessons.length === 0
-      : !p.questionsLoading && p.listQuestions.length === 0;
+    p.listType === "questions"
+      ? !p.questionsLoading && p.listQuestions.length === 0
+      : !p.liveLoading && p.liveItems.length === 0;
 
   const scrollProps = {
     showsVerticalScrollIndicator: false,
@@ -67,7 +73,13 @@ export function ListScreen(p: ListScreenProps) {
             <ArrowLeft size={19} color={C.abyss} />
           </Press>
           <T f="h" style={{ fontSize: 22 }}>
-            {p.listType === "lessons" ? "Tüm eğitimler" : "Tüm sorular"}
+            {p.listType === "lessons"
+              ? "Tüm eğitimler"
+              : p.listType === "voice"
+                ? "Tüm sesli sorular"
+                : p.listType === "mine"
+                  ? "Oturumlarım"
+                  : "Tüm sorular"}
           </T>
         </View>
         <View style={{ marginBottom: 14, justifyContent: "center" }}>
@@ -93,33 +105,10 @@ export function ListScreen(p: ListScreenProps) {
             }}
           />
         </View>
-        {p.listType === "lessons"
-          ? p.listLessons.map((item) => (
-              <View
-                key={item.title}
-                style={[
-                  {
-                    flexDirection: "row",
-                    gap: 11,
-                    alignItems: "center",
-                    backgroundColor: "#fff",
-                    borderRadius: 17,
-                    padding: 12,
-                    marginBottom: 9,
-                  },
-                  SH.soft,
-                ]}
-              >
-                <Avatar initials={item.initials} color={item.color} />
-                <View style={{ flex: 1 }}>
-                  <T f="bb" style={{ fontSize: 12 }}>
-                    {item.title}
-                  </T>
-                  <T style={{ color: C.muted, fontSize: 10, marginTop: 4 }}>
-                    {item.teacher} · {item.course}
-                  </T>
-                </View>
-                <PlayCircle size={20} color={C.tide} />
+        {p.listType !== "questions"
+          ? p.liveItems.map((item) => (
+              <View key={item.id} style={{ marginBottom: 12 }}>
+                <LiveCard s={item} width="100%" onOpen={p.onOpenSession} />
               </View>
             ))
           : p.listQuestions.map((item) => (
@@ -145,6 +134,13 @@ export function ListScreen(p: ListScreenProps) {
                 </T>
               </Press>
             ))}
+        {p.listType !== "questions" && p.hasMoreLive && (
+          <Press onPress={p.onLoadMoreLive} style={{ alignItems: "center", padding: 12 }}>
+            <T f="bb" style={{ color: C.tide, fontSize: 12 }}>
+              {p.loadingMoreLive ? "Yükleniyor…" : "Daha fazla göster"}
+            </T>
+          </Press>
+        )}
         {p.listType === "questions" && p.hasMoreQuestions && (
           <Press
             onPress={p.onLoadMoreQuestions}
