@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C } from "@/theme";
 import { useApp } from "@/hooks";
+import { useAuth } from "@/auth";
 import { Header } from "@/components/navigation";
 import { BottomNav } from "@/components/navigation";
 import {
@@ -33,6 +34,7 @@ export function AppShell() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const a = useApp();
+  const { signOut } = useAuth();
 
   const navBottom = insets.bottom + 10;
   const navTop = navBottom + NAV_WRAP;
@@ -204,6 +206,7 @@ export function AppShell() {
             onUnsave={(id) => a.onSave(id)}
             onWatchSaved={(id) => a.openFeed(id)}
             onPhoto={() => a.showToast("Fotoğraf seçimi yakında")}
+            onLogout={signOut}
           />
         )}
 

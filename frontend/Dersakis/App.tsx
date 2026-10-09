@@ -16,8 +16,27 @@ import {
 
 import { C } from "@/theme";
 import { AppProvider } from "@/contexts";
+import { AuthProvider, useAuth } from "@/auth";
+import { AuthScreen, BootScreen } from "@/screens/auth";
 import { AppShell } from "@/AppShell";
 import { emptyQ } from "@/screens";
+
+function Root() {
+  const { status, user, retry } = useAuth();
+
+  if (status === "loading" || status === "offline") {
+    return <BootScreen offline={status === "offline"} onRetry={retry} />;
+  }
+  if (status === "signedOut" || !user) {
+    return <AuthScreen />;
+  }
+  // key={user.id}: kullanıcı değişince tüm uygulama durumu sıfırdan başlar
+  return (
+    <AppProvider key={user.id} emptyQ={emptyQ}>
+      <AppShell />
+    </AppProvider>
+  );
+}
 
 export default function App() {
   const [loaded, error] = useFonts({
@@ -36,9 +55,9 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <AppProvider emptyQ={emptyQ}>
-        <AppShell />
-      </AppProvider>
+      <AuthProvider>
+        <Root />
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

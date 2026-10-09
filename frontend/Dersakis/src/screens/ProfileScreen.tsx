@@ -34,6 +34,7 @@ export type ProfileScreenProps = {
   onUnsave: (id: string) => void;
   onWatchSaved: (id: string) => void;
   onPhoto: () => void;
+  onLogout: () => void;
 };
 
 export function ProfileScreen(p: ProfileScreenProps) {
@@ -310,6 +311,13 @@ export function ProfileScreen(p: ProfileScreenProps) {
           </Chip>
         ))}
       </View>
+
+      <GradBtn
+        label="Çıkış yap"
+        colors={[C.muted, C.muted]}
+        style={{ marginTop: 28 }}
+        onPress={p.onLogout}
+      />
     </ScrollView>
   );
 }
