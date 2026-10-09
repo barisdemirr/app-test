@@ -1,0 +1,16 @@
+export const C = {
+  abyss: "#061A3A",
+  deep: "#0A2A66",
+  tide: "#1B6BFF",
+  lagoon: "#19C3D6",
+  foam: "#F2F8FF",
+  mist: "#DCEAF7",
+  pearl: "#FFFFFF",
+  coral: "#FF7A5C",
+  coral2: "#FF9D68",
+  sun: "#FFD66B",
+  muted: "#5B6B85",
+  success: "#1C8C5E",
+  error: "#C8372D",
+  ink: "#10213E",
+} as const;
