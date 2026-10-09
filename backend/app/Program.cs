@@ -103,6 +103,8 @@ if (smsProvider != "console")
     throw new InvalidOperationException($"Sms:Provider '{smsProvider}' desteklenmiyor. Şimdilik yalnızca 'console'.");
 builder.Services.AddSingleton<ISmsSender, ConsoleSmsSender>();
 
+builder.Services.AddScoped<OtpService>();
+builder.Services.AddHostedService<PhoneVerificationCleanupService>();
 
 
 var app = builder.Build();

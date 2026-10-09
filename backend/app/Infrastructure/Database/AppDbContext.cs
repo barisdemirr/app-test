@@ -16,6 +16,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
     public DbSet<QaQuestion> QaQuestions => Set<QaQuestion>();
     public DbSet<QaAnswer> QaAnswers => Set<QaAnswer>();
+    public DbSet<PhoneVerification> PhoneVerifications => Set<PhoneVerification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
