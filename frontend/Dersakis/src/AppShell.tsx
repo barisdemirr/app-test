@@ -177,20 +177,15 @@ export function AppShell() {
         {a.screen === "profile" && (
           <ProfileScreen
             bodyPad={bodyPad}
-            bio={a.bio}
-            credits={a.credits}
             earnedToday={a.earnedToday}
             stats={a.stats}
             selectedCourses={a.selectedCourses}
             interests={a.interests}
             availableInterests={a.availableInterests}
-            onBioChange={a.setBio}
-            onSaveBio={() => a.showToast("Profilin kaydedildi")}
             onToggleCourse={a.toggleCourse}
             onToggleInterest={a.toggleInterest}
             onWatchSaved={(id) => a.openFeed({ kind: "saved", startId: id })}
             showToast={a.showToast}
-            onPhoto={() => a.showToast("Fotoğraf seçimi yakında")}
             onLogout={signOut}
           />
         )}

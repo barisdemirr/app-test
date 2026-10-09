@@ -12,6 +12,9 @@ export const queryKeys = {
   qaDetail: (id: string) => ["qa", "detail", id] as const,
   rewards: ["rewards"] as const,
   redemptions: ["redemptions"] as const,
+  profile: ["profile"] as const,
+  referral: ["referral"] as const,
+  creditHistory: ["credit-history"] as const,
   quiz: (videoId: string) => ["quiz", videoId] as const,
   savedVideos: ["saved-videos"] as const,
 };

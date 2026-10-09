@@ -104,10 +104,6 @@ export type AppContextValue = {
   formError: string;
   publish: () => Promise<void>;
 
-  // ---- bio ----
-  bio: string;
-  setBio: (v: string) => void;
-
   // ---- toast ----
   toast: string;
   showToast: (m: string) => void;
@@ -166,9 +162,6 @@ export function AppProvider({
     total: statsQ.data?.answered ?? 0,
     correct: statsQ.data?.correct ?? 0,
   };
-
-  // TODO(aşama 9): biyografi /me/profile'a bağlanacak
-  const [bio, setBio] = useState("");
 
   const [joinedCourses, setJoinedCourses] = useState<string[]>([]);
 
@@ -411,9 +404,6 @@ export function AppProvider({
     setShowQ2,
     formError,
     publish,
-
-    bio,
-    setBio,
 
     toast,
     showToast,
