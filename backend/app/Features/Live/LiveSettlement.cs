@@ -2,6 +2,7 @@ using Dersakis.Domain.Entities;
 using Dersakis.Domain.Enums;
 using Dersakis.Infrastructure.Database;
 using Dersakis.Infrastructure.Services;
+using Dersakis.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace Dersakis.Features.Live;
