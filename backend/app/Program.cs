@@ -86,6 +86,8 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
 }));
 
 
+builder.Services.AddSingleton((builder.Configuration.GetSection("Qa").Get<QaSettings>() ?? new QaSettings()).EnsureValid());
+
 
 var app = builder.Build();
 

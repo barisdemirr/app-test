@@ -5,5 +5,7 @@ public enum CreditReason : byte
 {
     SignupBonus = 1,
     QuizCorrect = 2,
-    RewardRedeem = 3
+    RewardRedeem = 3,
+    QaQuestionSpend = 4,
+    QaBestAnswer = 5
 }
