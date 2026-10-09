@@ -13,6 +13,7 @@ import {
   FilterSheet,
   OnboardingSheet,
   QuestionSheet,
+  QuizSheet,
 } from "@/components/sheets";
 import {
   CreateScreen,
@@ -133,7 +134,7 @@ export function AppShell() {
             bottomOffset={navTop}
             suspended={a.sheet !== ""}
             onBack={() => a.setScreen("home")}
-            onQuiz={() => a.showToast("Quiz bir sonraki adımda bağlanacak")}
+            onQuiz={(item) => a.openQuiz({ id: item.id, courseName: item.courseName })}
             showToast={a.showToast}
           />
         )}
@@ -215,6 +216,16 @@ export function AppShell() {
       />
 
       {a.sheet === "" && <Toast text={a.toast} bottom={navTop + 6} />}
+
+      {a.sheet === "quiz" && a.quizVideo && (
+        <QuizSheet
+          videoId={a.quizVideo.id}
+          courseName={a.quizVideo.courseName}
+          toast={a.toast}
+          onClose={() => a.setSheet("")}
+          showToast={a.showToast}
+        />
+      )}
 
       {a.sheet === "ask" && (
         <AskSheet

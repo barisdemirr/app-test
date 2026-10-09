@@ -8,3 +8,4 @@ export * from "./useStats";
 export * from "./useFeed";
 export * from "./feedCache";
 export * from "./useVideoFlag";
+export * from "./useQuiz";

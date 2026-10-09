@@ -61,6 +61,8 @@ export type AppContextValue = {
   toggleInterest: (c: string) => void;
 
   // ---- feed ----
+  quizVideo: { id: string; courseName: string } | null;
+  openQuiz: (v: { id: string; courseName: string }) => void;
   feedSource: FeedSource;
   openFeed: (source?: FeedSource) => void;
 
@@ -172,7 +174,7 @@ export function AppProvider({
     correct: statsQ.data?.correct ?? 0,
   };
 
-  // TODO(aşama 5/8): quiz ve ödül henüz yerel; API'ye bağlanınca bu yama kalkacak.
+  // TODO(aşama 8): ödül henüz yerel; API'ye bağlanınca bu yama kalkacak.
   const patchBalance = (delta: number, earned = 0) =>
     qc.setQueryData<BalanceDto>(queryKeys.balance, (b) =>
       b
@@ -189,6 +191,12 @@ export function AppProvider({
   const [bio, setBio] = useState("");
 
   const [joinedCourses, setJoinedCourses] = useState<string[]>([]);
+
+  const [quizVideo, setQuizVideo] = useState<{ id: string; courseName: string } | null>(null);
+  const openQuiz = (v: { id: string; courseName: string }) => {
+    setQuizVideo(v);
+    setSheet("quiz");
+  };
 
   // feed
   const [feedSource, setFeedSource] = useState<FeedSource>({ kind: "feed" });
@@ -389,6 +397,8 @@ export function AppProvider({
     availableInterests,
     toggleInterest,
 
+    quizVideo,
+    openQuiz,
     feedSource,
     openFeed,
 
