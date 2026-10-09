@@ -2,33 +2,28 @@ using System.Security.Claims;
 using Dersakis.Domain.Enums;
 using Dersakis.Infrastructure.Database;
 using Dersakis.Shared;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Dersakis.Features.Feed;
 
-public sealed class GetFeed : IEndpoint
+public sealed class GetSavedVideos : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
-        => app.MapGet("/feed", Handle).RequireAuthorization().WithTags("Feed");
+        => app.MapGet("/me/saved-videos", Handle).RequireAuthorization().WithTags("Feed");
 
     private static async Task<IResult> Handle(
-        ClaimsPrincipal principal, AppDbContext db,
-        [FromQuery] Guid[]? courseIds, long? cursor, int? limit, CancellationToken ct)
+        ClaimsPrincipal principal, AppDbContext db, long? cursor, int? limit, CancellationToken ct)
     {
         if (principal.GetUserId() is not { } userId)
             return Result.Failure(Error.Unauthorized("invalid_token", "Geçersiz oturum.")).ToProblem();
 
-        if (courseIds is { Length: > 20 })
-            return Result.Failure(Error.Validation("too_many_courses", "En fazla 20 ders filtrelenebilir.")).ToProblem();
-
         var size = Math.Clamp(limit ?? 10, 1, 20);
 
-        var videos = db.Videos.AsNoTracking().Where(v => v.Status == VideoStatus.Published);
-        if (courseIds is { Length: > 0 }) videos = videos.Where(v => courseIds.Contains(v.CourseId));
+        var videos = db.Videos.AsNoTracking().Where(v =>
+            v.Status == VideoStatus.Published &&
+            db.VideoMarks.Any(m => m.UserId == userId && m.VideoId == v.Id && m.Kind == VideoMarkKind.Saved));
         if (cursor is { } after) videos = videos.Where(v => v.PublishSeq < after);
 
-        // size + 1 satır çek: fazlalık "sonraki sayfa var" demek (COUNT sorgusu yok).
         var rows = await FeedQueries.Project(db, videos, userId)
             .OrderByDescending(r => r.Seq)
             .Take(size + 1)
