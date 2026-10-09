@@ -6,8 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import type { Question, Reward, Screen, SheetName } from "@/types";
-import { initialQuestions } from "@/mocks";
+import type { Reward, Screen, SheetName } from "@/types";
 import { toggleIn } from "@/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
@@ -74,20 +73,11 @@ export type AppContextValue = {
   feedSource: FeedSource;
   openFeed: (source?: FeedSource) => void;
 
-  // ---- questions ----
-  questions: Question[];
-  selectedQuestion: number;
-  openQuestion: (q: Question) => void;
-  sendQuestion: () => void;
-  sendAnswer: () => void;
-  askCourse: string;
-  setAskCourse: (c: string) => void;
-  askTopic: string;
-  setAskTopic: (v: string) => void;
-  askText: string;
-  setAskText: (v: string) => void;
-  answerText: string;
-  setAnswerText: (v: string) => void;
+  // ---- questions (Bilene sor) ----
+  questionId: string | null;
+  openQuestion: (id: string) => void;
+  /** Soru sorulan/video yüklenen ders seçili değilse seçime ekler */
+  selectCourseByName: (name: string) => void;
 
   // ---- list/search ----
   searchText: string;
@@ -212,12 +202,7 @@ export function AppProvider({
   const [feedSource, setFeedSource] = useState<FeedSource>({ kind: "feed" });
 
   // questions
-  const [questions, setQuestions] = useState<Question[]>(initialQuestions);
-  const [selectedQuestion, setSelectedQuestion] = useState(0);
-  const [askCourse, setAskCourse] = useState("Matematik 1");
-  const [askTopic, setAskTopic] = useState("");
-  const [askText, setAskText] = useState("");
-  const [answerText, setAnswerText] = useState("");
+  const [questionId, setQuestionId] = useState<string | null>(null);
 
   // list/search
   const [searchText, setSearchText] = useState("");
@@ -306,44 +291,8 @@ export function AppProvider({
     setScreen(s);
   };
 
-  // questions
-  const sendQuestion = () => {
-    if (!askText.trim()) return showToast("Sorunu yazmayı unutma");
-    setQuestions((qs) => [
-      {
-        name: "Ada",
-        initials: "AY",
-        color: "#8B8CF8",
-        course: askCourse,
-        topic: askTopic.trim() || "Genel",
-        text: askText.trim(),
-        answers: [],
-      },
-      ...qs,
-    ]);
-    ensureCourseSelected(askCourse);
-    setAskText("");
-    setAskTopic("");
-    setSheet("");
-    showToast("Sorun paylaşıldı");
-  };
-
-  const sendAnswer = () => {
-    if (!answerText.trim()) return showToast("Yanıtını yazmayı unutma");
-    setQuestions((qs) =>
-      qs.map((q, i) =>
-        i === selectedQuestion
-          ? { ...q, answers: [...q.answers, answerText.trim()] }
-          : q,
-      ),
-    );
-    setAnswerText("");
-    showToast("Yanıtın eklendi");
-  };
-
-  const openQuestion = (q: Question) => {
-    setSelectedQuestion(questions.indexOf(q));
-    setAnswerText("");
+  const openQuestion = (id: string) => {
+    setQuestionId(id);
     setSheet("question");
   };
 
@@ -459,19 +408,9 @@ export function AppProvider({
     feedSource,
     openFeed,
 
-    questions,
-    selectedQuestion,
+    questionId,
     openQuestion,
-    sendQuestion,
-    sendAnswer,
-    askCourse,
-    setAskCourse,
-    askTopic,
-    setAskTopic,
-    askText,
-    setAskText,
-    answerText,
-    setAnswerText,
+    selectCourseByName: ensureCourseSelected,
 
     searchText,
     setSearchText,

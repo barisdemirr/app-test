@@ -9,7 +9,9 @@ import {
   Sparkles,
 } from "lucide-react-native";
 import { C, DIAG, FONT, fin, G_PRIMARY, SH } from "@/theme";
-import type { Lesson, Question } from "@/types";
+import type { Lesson } from "@/types";
+import type { QaQuestion } from "@/api/qa";
+import { colorFor, initialsOf } from "@/utils/user";
 import { useCourseNames } from "@/queries";
 import {
   Avatar,
@@ -33,14 +35,15 @@ export type HomeScreenProps = {
   searchText: string;
   courseFilter: string;
   filteredLessons: Lesson[];
-  filteredQuestions: Question[];
+  filteredQuestions: QaQuestion[];
+  questionsLoading: boolean;
   bodyPad: number;
   onSearchChange: (v: string) => void;
   onCourseFilterChange: (c: string) => void;
   onOpenFilter: () => void;
   onOpenList: (t: "lessons" | "questions") => void;
   onOpenFeed: () => void;
-  onOpenQuestion: (q: Question) => void;
+  onOpenQuestion: (q: QaQuestion) => void;
   onOpenAsk: () => void;
   onJoinCourse: (title: string) => void;
 };
@@ -415,7 +418,9 @@ export function HomeScreen(p: HomeScreenProps) {
           onPress={p.onOpenAsk}
         />
       </View>
-      {p.filteredQuestions.length === 0 ? (
+      {p.questionsLoading ? (
+        <T style={{ color: C.muted, fontSize: 12 }}>Yükleniyor…</T>
+      ) : p.filteredQuestions.length === 0 ? (
         <T style={{ color: C.muted, fontSize: 12 }}>
           Seçtiğin derslerde soru yok. İlk soruyu sen sor.
         </T>
@@ -423,7 +428,7 @@ export function HomeScreen(p: HomeScreenProps) {
         <FlatList
           horizontal
           data={p.filteredQuestions}
-          keyExtractor={(i) => i.text}
+          keyExtractor={(i) => i.id}
           showsHorizontalScrollIndicator={false}
           snapToInterval={272}
           decelerationRate="fast"
@@ -453,26 +458,32 @@ export function HomeScreen(p: HomeScreenProps) {
               ]}
             >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Avatar initials={item.initials} color={item.color} size={30} />
+                <Avatar
+                  initials={initialsOf(item.authorName)}
+                  color={colorFor(item.authorId)}
+                  size={30}
+                />
                 <T f="bb" style={{ fontSize: 12 }}>
-                  {item.name}
+                  {item.authorName}
                 </T>
                 <T style={{ marginLeft: "auto", fontSize: 9, color: C.muted }}>
-                  {item.course}
+                  {item.category}
                 </T>
               </View>
-              <View
-                style={{
-                  alignSelf: "flex-start",
-                  marginTop: 11,
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
-                  borderRadius: 999,
-                  backgroundColor: "#EAF3FF",
-                }}
-              >
-                <T style={{ fontSize: 10, color: C.tide }}>{item.topic}</T>
-              </View>
+              {item.topic ? (
+                <View
+                  style={{
+                    alignSelf: "flex-start",
+                    marginTop: 11,
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    borderRadius: 999,
+                    backgroundColor: "#EAF3FF",
+                  }}
+                >
+                  <T style={{ fontSize: 10, color: C.tide }}>{item.topic}</T>
+                </View>
+              ) : null}
               <T
                 f="bs"
                 style={{
@@ -496,15 +507,9 @@ export function HomeScreen(p: HomeScreenProps) {
                   marginTop: 8,
                 }}
               >
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Avatar initials="EY" color="#8589F9" size={19} />
-                  <View style={{ marginLeft: -5 }}>
-                    <Avatar initials="MA" color="#F29C72" size={19} />
-                  </View>
-                  <T style={{ fontSize: 10, color: C.muted, marginLeft: 6 }}>
-                    {item.answers.length} cevap
-                  </T>
-                </View>
+                <T style={{ fontSize: 10, color: C.muted }}>
+                  {item.answerCount} cevap{item.hasBestAnswer ? " · ✓ çözüldü" : ""}
+                </T>
                 <T f="bb" style={{ color: C.tide, fontSize: 11 }}>
                   Cevapla →
                 </T>

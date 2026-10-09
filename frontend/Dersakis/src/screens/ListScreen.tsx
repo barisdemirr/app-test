@@ -2,7 +2,8 @@ import React from "react";
 import { ScrollView, TextInput, View } from "react-native";
 import { ArrowLeft, PlayCircle, Search } from "lucide-react-native";
 import { C, FONT, SH } from "@/theme";
-import type { Lesson, Question } from "@/types";
+import type { Lesson } from "@/types";
+import type { QaQuestion } from "@/api/qa";
 import { Avatar, Press, Sonar, T } from "@/components/ui";
 
 export type ListScreenProps = {
@@ -11,15 +12,21 @@ export type ListScreenProps = {
   listType: "lessons" | "questions";
   searchText: string;
   listLessons: Lesson[];
-  listQuestions: Question[];
+  listQuestions: QaQuestion[];
+  questionsLoading: boolean;
+  hasMoreQuestions: boolean;
+  loadingMoreQuestions: boolean;
+  onLoadMoreQuestions: () => void;
   onBack: () => void;
   onSearchChange: (v: string) => void;
-  onOpenQuestion: (q: Question) => void;
+  onOpenQuestion: (q: QaQuestion) => void;
 };
 
 export function ListScreen(p: ListScreenProps) {
   const listEmpty =
-    (p.listType === "lessons" ? p.listLessons : p.listQuestions).length === 0;
+    p.listType === "lessons"
+      ? p.listLessons.length === 0
+      : !p.questionsLoading && p.listQuestions.length === 0;
 
   const scrollProps = {
     showsVerticalScrollIndicator: false,
@@ -117,7 +124,7 @@ export function ListScreen(p: ListScreenProps) {
             ))
           : p.listQuestions.map((item) => (
               <Press
-                key={item.text}
+                key={item.id}
                 onPress={() => p.onOpenQuestion(item)}
                 style={[
                   {
@@ -133,10 +140,21 @@ export function ListScreen(p: ListScreenProps) {
                   {item.text}
                 </T>
                 <T style={{ marginTop: 6, color: C.muted, fontSize: 10 }}>
-                  {item.name} · {item.course} · {item.answers.length} cevap
+                  {item.authorName} · {item.category} · {item.answerCount} cevap
+                  {item.hasBestAnswer ? " · ✓ çözüldü" : ""}
                 </T>
               </Press>
             ))}
+        {p.listType === "questions" && p.hasMoreQuestions && (
+          <Press
+            onPress={p.onLoadMoreQuestions}
+            style={{ alignItems: "center", padding: 12 }}
+          >
+            <T f="bb" style={{ color: C.tide, fontSize: 12 }}>
+              {p.loadingMoreQuestions ? "Yükleniyor…" : "Daha fazla göster"}
+            </T>
+          </Press>
+        )}
         {listEmpty && (
           <View style={{ marginTop: 70, alignItems: "center" }}>
             <View style={{ position: "absolute", top: -35, opacity: 0.5 }}>

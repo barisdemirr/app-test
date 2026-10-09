@@ -3,7 +3,7 @@ import { View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C } from "@/theme";
-import { useApp } from "@/hooks";
+import { useApp, useDebounced } from "@/hooks";
 import { useAuth } from "@/auth";
 import { BootScreen } from "@/screens/auth";
 import { Header } from "@/components/navigation";
@@ -27,6 +27,7 @@ import {
 import { lessons } from "@/mocks";
 import { Toast } from "@/components/ui";
 import { useMemo } from "react";
+import { flattenQa, useQaQuestions } from "@/queries";
 
 const NAV_H = 67;
 const NAV_WRAP = 83;
@@ -52,27 +53,27 @@ export function AppShell() {
     );
   }, [a.selectedCourses, a.courseFilter, a.searchText]);
 
-  const filteredQuestions = useMemo(() => {
-    return a.questions.filter(
-      (x) =>
-        a.selectedCourses.includes(x.course) &&
-        (a.courseFilter === "Tümü" || x.course === a.courseFilter) &&
-        `${x.text} ${x.name} ${x.course} ${x.topic}`
-          .toLowerCase()
-          .includes(a.searchText.toLowerCase()),
-    );
-  }, [a.questions, a.selectedCourses, a.courseFilter, a.searchText]);
+  // Bilene sor: kategori filtresi ve arama sunucuda yapılır (arama debounce'lu)
+  const dSearch = useDebounced(a.searchText.trim(), 350);
+  const homeCats = a.courseFilter === "Tümü" ? a.selectedCourses : [a.courseFilter];
+  const homeQ = useQaQuestions({
+    categories: homeCats,
+    search: dSearch,
+    limit: 10,
+    enabled: a.ready && a.screen === "home",
+  });
+  const listQ = useQaQuestions({
+    categories: a.selectedCourses,
+    search: dSearch,
+    limit: 20,
+    enabled: a.ready && a.screen === "list" && a.listType === "questions",
+  });
 
   const lk = a.searchText.toLowerCase();
   const listLessons = lessons.filter(
     (x) =>
       a.selectedCourses.includes(x.course) &&
       `${x.title} ${x.course} ${x.teacher}`.toLowerCase().includes(lk),
-  );
-  const listQuestions = a.questions.filter(
-    (x) =>
-      a.selectedCourses.includes(x.course) &&
-      `${x.text} ${x.course} ${x.topic} ${x.name}`.toLowerCase().includes(lk),
   );
 
   const showHeader =
@@ -112,14 +113,15 @@ export function AppShell() {
             searchText={a.searchText}
             courseFilter={a.courseFilter}
             filteredLessons={filteredLessons}
-            filteredQuestions={filteredQuestions}
+            filteredQuestions={flattenQa(homeQ.data)}
+            questionsLoading={homeQ.isLoading}
             bodyPad={bodyPad}
             onSearchChange={a.setSearchText}
             onCourseFilterChange={a.setCourseFilter}
             onOpenFilter={() => a.setSheet("filter")}
             onOpenList={a.openList}
             onOpenFeed={() => a.goTab("feed")}
-            onOpenQuestion={a.openQuestion}
+            onOpenQuestion={(q) => a.openQuestion(q.id)}
             onOpenAsk={() => a.setSheet("ask")}
             onJoinCourse={a.joinCourse}
           />
@@ -199,10 +201,14 @@ export function AppShell() {
             listType={a.listType}
             searchText={a.searchText}
             listLessons={listLessons}
-            listQuestions={listQuestions}
+            listQuestions={flattenQa(listQ.data)}
+            questionsLoading={listQ.isLoading}
+            hasMoreQuestions={!!listQ.hasNextPage}
+            loadingMoreQuestions={listQ.isFetchingNextPage}
+            onLoadMoreQuestions={() => listQ.fetchNextPage()}
             onBack={() => a.setScreen("home")}
             onSearchChange={a.setSearchText}
-            onOpenQuestion={a.openQuestion}
+            onOpenQuestion={(q) => a.openQuestion(q.id)}
           />
         )}
       </View>
@@ -230,25 +236,20 @@ export function AppShell() {
       {a.sheet === "ask" && (
         <AskSheet
           toast={a.toast}
-          askCourse={a.askCourse}
-          askTopic={a.askTopic}
-          askText={a.askText}
+          credits={a.credits}
+          defaultCategory={a.selectedCourses[0] ?? ""}
           onClose={() => a.setSheet("")}
-          onCourseChange={a.setAskCourse}
-          onTopicChange={a.setAskTopic}
-          onTextChange={a.setAskText}
-          onSubmit={a.sendQuestion}
+          onAsked={a.selectCourseByName}
+          showToast={a.showToast}
         />
       )}
 
-      {a.sheet === "question" && a.questions[a.selectedQuestion] && (
+      {a.sheet === "question" && a.questionId && (
         <QuestionSheet
-          question={a.questions[a.selectedQuestion]}
+          questionId={a.questionId}
           toast={a.toast}
-          answerText={a.answerText}
           onClose={() => a.setSheet("")}
-          onAnswerChange={a.setAnswerText}
-          onSubmit={a.sendAnswer}
+          showToast={a.showToast}
         />
       )}
 
