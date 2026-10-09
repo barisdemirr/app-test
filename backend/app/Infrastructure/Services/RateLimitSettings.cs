@@ -15,6 +15,7 @@ public sealed class RateLimitSettings
     public RateRule Write { get; init; } = new() { Permits = 30 };
     public RateRule Upload { get; init; } = new() { Permits = 10 };
     public RateRule Watch { get; init; } = new() { Permits = 60 };
+    public RateRule Sms { get; init; } = new() { Permits = 5 };
 }
 
 public static class RateLimitPolicies
@@ -25,4 +26,5 @@ public static class RateLimitPolicies
     public const string Write = "write";
     public const string Upload = "upload";
     public const string Watch = "watch";
+    public const string Sms = "sms";
 }

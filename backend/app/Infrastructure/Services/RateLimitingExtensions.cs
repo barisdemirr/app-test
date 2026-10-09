@@ -27,6 +27,7 @@ public static class RateLimitingExtensions
             o.AddPolicy(RateLimitPolicies.Write, ctx => Sliding(UserOrIp(ctx), s.Write));
             o.AddPolicy(RateLimitPolicies.Upload, ctx => Sliding(UserOrIp(ctx), s.Upload));
             o.AddPolicy(RateLimitPolicies.Watch, ctx => Sliding(UserOrIp(ctx), s.Watch));
+            o.AddPolicy(RateLimitPolicies.Sms, ctx => Sliding(Ip(ctx), s.Sms));
             
             o.OnRejected = async (context, ct) =>
             {

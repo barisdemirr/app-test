@@ -95,6 +95,16 @@ builder.Services.AddHostedService<QaAutoAwardService>();
 builder.Services.AddScoped<QaRefundService>();
 
 
+builder.Services.AddSingleton((builder.Configuration.GetSection("Otp").Get<OtpSettings>() ?? new OtpSettings()).EnsureValid());
+builder.Services.AddSingleton((builder.Configuration.GetSection("Referral").Get<ReferralSettings>() ?? new ReferralSettings()).EnsureValid());
+
+var smsProvider = builder.Configuration["Sms:Provider"] ?? "console";
+if (smsProvider != "console")
+    throw new InvalidOperationException($"Sms:Provider '{smsProvider}' desteklenmiyor. Şimdilik yalnızca 'console'.");
+builder.Services.AddSingleton<ISmsSender, ConsoleSmsSender>();
+
+
+
 var app = builder.Build();
 
 
