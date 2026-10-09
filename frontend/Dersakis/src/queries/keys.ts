@@ -15,6 +15,9 @@ export const queryKeys = {
   profile: ["profile"] as const,
   referral: ["referral"] as const,
   creditHistory: ["credit-history"] as const,
+  notifications: ["notifications"] as const,
+  notificationsBadge: ["notifications", "badge"] as const,
+  notificationsList: ["notifications", "list"] as const,
   quiz: (videoId: string) => ["quiz", videoId] as const,
   savedVideos: ["saved-videos"] as const,
 };

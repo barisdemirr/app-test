@@ -14,6 +14,7 @@ import {
   OnboardingSheet,
   QuestionSheet,
   QuizSheet,
+  NotificationsSheet,
 } from "@/components/sheets";
 import {
   CreateScreen,
@@ -27,7 +28,8 @@ import {
 import { lessons } from "@/mocks";
 import { Toast } from "@/components/ui";
 import { useMemo } from "react";
-import { flattenQa, useQaQuestions } from "@/queries";
+import { flattenQa, useQaQuestions, useUnreadCount } from "@/queries";
+import { usePushRegistration } from "@/push";
 
 const NAV_H = 67;
 const NAV_WRAP = 83;
@@ -52,6 +54,11 @@ export function AppShell() {
           .includes(a.searchText.toLowerCase()),
     );
   }, [a.selectedCourses, a.courseFilter, a.searchText]);
+
+  // Cihaz kaydı + push dinleyicileri. Bildirime dokununca kutu açılır.
+  // TODO(aşama 11): sessionId varsa doğrudan canlı oturum ekranına git.
+  usePushRegistration(() => a.setSheet("notifications"));
+  const unreadQ = useUnreadCount();
 
   // Bilene sor: kategori filtresi ve arama sunucuda yapılır (arama debounce'lu)
   const dSearch = useDebounced(a.searchText.trim(), 350);
@@ -97,6 +104,8 @@ export function AppShell() {
           credits={a.credits}
           earnedToday={a.earnedToday}
           dailyCap={a.dailyCap}
+          unread={unreadQ.data ?? 0}
+          onBell={() => a.setSheet("notifications")}
         />
       )}
 
@@ -226,6 +235,16 @@ export function AppShell() {
           toast={a.toast}
           onClose={() => a.setSheet("")}
           showToast={a.showToast}
+        />
+      )}
+
+      {a.sheet === "notifications" && (
+        <NotificationsSheet
+          toast={a.toast}
+          onClose={() => a.setSheet("")}
+          onOpenNotification={() => {
+            // TODO(aşama 11): n.data?.sessionId varsa canlı oturum ekranını aç
+          }}
         />
       )}
 

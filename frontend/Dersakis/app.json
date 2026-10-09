@@ -24,8 +24,7 @@
     "plugins": [
       "expo-font",
       "expo-status-bar",
-      "expo-secure-store",
-      "expo-video"
+      "expo-notifications"
     ]
   }
 }

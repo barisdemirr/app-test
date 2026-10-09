@@ -12,6 +12,7 @@ import { errorMessage } from "@/api/errors";
 import {
   CreditHistory,
   InviteSection,
+  NotificationSettings,
   ProfileHeader,
   StatsSection,
 } from "@/components/profile";
@@ -161,6 +162,7 @@ export function ProfileScreen(p: ProfileScreenProps) {
         ))}
       </View>
 
+      <NotificationSettings />
       <InviteSection />
       <CreditHistory />
 

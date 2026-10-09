@@ -6,4 +6,4 @@ export type Screen =
   | "profile"
   | "list";
 
-export type SheetName = "" | "quiz" | "ask" | "question" | "filter";
+export type SheetName = "" | "quiz" | "ask" | "question" | "filter" | "notifications";

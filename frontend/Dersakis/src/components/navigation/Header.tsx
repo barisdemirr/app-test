@@ -1,15 +1,18 @@
 import React from "react";
 import { View } from "react-native";
+import { Bell } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import { C, DIAG, G_PRIMARY, SH } from "@/theme";
-import { Sonar, T } from "@/components/ui";
+import { Press, Sonar, T } from "@/components/ui";
 
 export type HeaderProps = {
   topInset: number;
   credits: number;
   earnedToday: number;
   dailyCap: number;
+  unread: number;
+  onBell: () => void;
 };
 
 export function Header(p: HeaderProps) {
@@ -54,6 +57,43 @@ export function Header(p: HeaderProps) {
           Dersakış
         </T>
       </View>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <Press
+        onPress={p.onBell}
+        style={[
+          {
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: "#fff",
+            alignItems: "center",
+            justifyContent: "center",
+          },
+          SH.soft,
+        ]}
+      >
+        <Bell size={17} color={C.abyss} />
+        {p.unread > 0 && (
+          <View
+            style={{
+              position: "absolute",
+              top: -2,
+              right: -2,
+              minWidth: 17,
+              height: 17,
+              paddingHorizontal: 4,
+              borderRadius: 9,
+              backgroundColor: C.coral,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <T f="bb" style={{ color: "#fff", fontSize: 9 }}>
+              {p.unread > 9 ? "9+" : p.unread}
+            </T>
+          </View>
+        )}
+      </Press>
       <View
         style={[
           {
@@ -107,6 +147,7 @@ export function Header(p: HeaderProps) {
             }}
           />
         </View>
+      </View>
       </View>
     </View>
   );

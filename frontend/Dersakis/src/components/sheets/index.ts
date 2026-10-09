@@ -4,3 +4,4 @@ export * from "./QuestionSheet";
 export * from "./FilterSheet";
 export * from "./OnboardingSheet";
 export * from "./RedeemSheet";
+export * from "./NotificationsSheet";
