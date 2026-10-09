@@ -28,7 +28,7 @@ public static class RateLimitingExtensions
             o.AddPolicy(RateLimitPolicies.Upload, ctx => Sliding(UserOrIp(ctx), s.Upload));
             o.AddPolicy(RateLimitPolicies.Watch, ctx => Sliding(UserOrIp(ctx), s.Watch));
             o.AddPolicy(RateLimitPolicies.Sms, ctx => Sliding(Ip(ctx), s.Sms));
-            
+
             o.OnRejected = async (context, ct) =>
             {
                 var http = context.HttpContext;
@@ -63,8 +63,12 @@ public static class RateLimitingExtensions
         => ctx.User.GetUserId() is { } id ? "u:" + id : Ip(ctx);
 
 
-    /// <summary>Sağlık kontrolü ve video akışı global limite takılmaz (bant genişliği işi, API kötüye kullanımı değil).</summary>
+    /// <summary>Sağlık kontrolü, video akışı ve avatar görselleri genel limite takılmaz (bant genişliği işi, API kötüye kullanımı değil).</summary>
     private static bool IsUnmetered(PathString path)
-        => path.StartsWithSegments("/api/v1/health")
-           || (path.StartsWithSegments("/api/v1/videos") && path.Value!.EndsWith("/stream", StringComparison.Ordinal));
+    {
+        var p = path.Value ?? "";
+        return path.StartsWithSegments("/api/v1/health")
+            || (path.StartsWithSegments("/api/v1/videos") && p.EndsWith("/stream", StringComparison.Ordinal))
+            || (path.StartsWithSegments("/api/v1/users") && p.EndsWith("/avatar", StringComparison.Ordinal));
+    }
 }
