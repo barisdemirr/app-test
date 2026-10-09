@@ -10,5 +10,11 @@ public enum CreditReason : byte
     QaBestAnswer = 5,
     QaQuestionRefund = 6,
     ReferralInviter = 7,
-    ReferralInvitee = 8
+    ReferralInvitee = 8,
+    LiveVoiceSpend = 9,
+    LiveVoiceReward = 10,
+    LiveVoiceRefund = 11,
+    LiveLessonPurchase = 12,
+    LiveLessonEarning = 13,
+    LiveLessonRefund = 14
 }
