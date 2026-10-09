@@ -3,8 +3,13 @@ import { ScrollView, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { PlayCircle, Plus } from "lucide-react-native";
 import { C, DIAG, fin, HORZ, SH } from "@/theme";
-import { useCourseNames } from "@/queries";
-import type { Reel } from "@/types";
+import {
+  flattenFeed,
+  useCourseNames,
+  useSavedVideos,
+  useVideoFlag,
+} from "@/queries";
+import { errorMessage } from "@/api/errors";
 import {
   Avatar,
   Chip,
@@ -21,9 +26,6 @@ export type ProfileScreenProps = {
   credits: number;
   earnedToday: number;
   stats: { total: number; correct: number };
-  finishedCount: number;
-  saved: string[];
-  reels: Reel[];
   selectedCourses: string[];
   interests: string[];
   availableInterests: string[];
@@ -31,14 +33,18 @@ export type ProfileScreenProps = {
   onSaveBio: () => void;
   onToggleCourse: (c: string) => void;
   onToggleInterest: (c: string) => void;
-  onUnsave: (id: string) => void;
   onWatchSaved: (id: string) => void;
   onPhoto: () => void;
   onLogout: () => void;
+  showToast: (m: string) => void;
 };
 
 export function ProfileScreen(p: ProfileScreenProps) {
   const courses = useCourseNames();
+  const savedQ = useSavedVideos();
+  const flag = useVideoFlag();
+  // "Çıkar"a basılan video, liste yeniden çekilene kadar görünmesin
+  const savedItems = flattenFeed(savedQ.data).filter((v) => v.saved);
   const scrollProps = {
     showsVerticalScrollIndicator: false,
     keyboardShouldPersistTaps: "handled" as const,
@@ -127,9 +133,9 @@ export function ProfileScreen(p: ProfileScreenProps) {
 
       <View style={{ flexDirection: "row", gap: 8, marginVertical: 14 }}>
         {[
-          [String(12 + p.finishedCount), "video izlendi"],
+          [String(p.stats.total), "çözülen soru"],
           [String(p.earnedToday), "bugün kazanılan"],
-          [String(p.saved.length), "kaydedilen"],
+          [String(savedItems.length), "kaydedilen"],
         ].map(([v, label]) => (
           <View
             key={label}
@@ -249,19 +255,21 @@ export function ProfileScreen(p: ProfileScreenProps) {
         })}
 
       <SectionTitle title="Kaydettiğim videolar" />
-      {p.saved.length === 0 ? (
+      {savedQ.isLoading ? (
+        <View style={{ padding: 15, borderRadius: 17, backgroundColor: "#fff" }}>
+          <T style={{ color: C.muted, fontSize: 12 }}>Yükleniyor…</T>
+        </View>
+      ) : savedItems.length === 0 ? (
         <View style={{ padding: 15, borderRadius: 17, backgroundColor: "#fff" }}>
           <T style={{ color: C.muted, fontSize: 12 }}>
             Henüz kaydettiğin video yok. Akışta bir videoya yer imi ekle.
           </T>
         </View>
       ) : (
-        p.saved.map((id) => {
-          const r = p.reels.find((x) => x.id === id);
-          if (!r) return null;
-          return (
+        <>
+          {savedItems.map((v) => (
             <View
-              key={id}
+              key={v.id}
               style={{
                 padding: 12,
                 backgroundColor: "#fff",
@@ -274,13 +282,27 @@ export function ProfileScreen(p: ProfileScreenProps) {
             >
               <PlayCircle size={20} color={C.tide} />
               <T f="bs" style={{ flex: 1, fontSize: 11 }} numberOfLines={2}>
-                {r.title}
+                {v.title}
               </T>
-              <Chip onPress={() => p.onWatchSaved(id)}>İzle</Chip>
-              <Chip onPress={() => p.onUnsave(id)}>Çıkar</Chip>
+              <Chip onPress={() => p.onWatchSaved(v.id)}>İzle</Chip>
+              <Chip
+                onPress={() =>
+                  flag.mutate(
+                    { id: v.id, kind: "save", active: false },
+                    { onError: (e) => p.showToast(errorMessage(e)) },
+                  )
+                }
+              >
+                Çıkar
+              </Chip>
             </View>
-          );
-        })
+          ))}
+          {savedQ.hasNextPage && (
+            <Chip onPress={() => savedQ.fetchNextPage()}>
+              {savedQ.isFetchingNextPage ? "Yükleniyor…" : "Daha fazla göster"}
+            </Chip>
+          )}
+        </>
       )}
 
       <SectionTitle title="Tercihlerim" />

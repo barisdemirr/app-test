@@ -5,3 +5,6 @@ export * from "./useCourses";
 export * from "./usePreferences";
 export * from "./useBalance";
 export * from "./useStats";
+export * from "./useFeed";
+export * from "./feedCache";
+export * from "./useVideoFlag";

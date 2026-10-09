@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { View, useWindowDimensions } from "react-native";
+import React from "react";
+import { View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C } from "@/theme";
@@ -13,7 +13,6 @@ import {
   FilterSheet,
   OnboardingSheet,
   QuestionSheet,
-  QuizSheet,
 } from "@/components/sheets";
 import {
   CreateScreen,
@@ -33,21 +32,12 @@ const NAV_WRAP = 83;
 
 export function AppShell() {
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
   const a = useApp();
   const { signOut, user } = useAuth();
 
   const navBottom = insets.bottom + 10;
   const navTop = navBottom + NAV_WRAP;
   const bodyPad = navTop + 24;
-
-  // feed scroll when opening feed
-  useEffect(() => {
-    if (a.screen === "feed" && a.feedRef.current) {
-      a.feedRef.current.scrollTo({ y: a.safeIndex * height, animated: false });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [a.screen]);
 
   // derived lists
   const filteredLessons = useMemo(() => {
@@ -136,27 +126,15 @@ export function AppShell() {
 
         {a.screen === "feed" && (
           <FeedScreen
-            feedRef={a.feedRef}
-            reels={a.visibleReels}
-            width={width}
-            height={height}
+            source={a.feedSource}
+            courseIds={a.selectedCourseIds}
+            interests={a.interests}
             topInset={insets.top}
             bottomOffset={navTop}
-            safeIndex={a.safeIndex}
-            progress={a.progress}
-            playing={a.playing}
-            finished={a.finished}
-            learned={a.learned}
-            saved={a.saved}
-            onScrollEnd={a.onFeedScrollEnd}
-            onTogglePlay={a.onTogglePlay}
-            onLearn={a.onLearn}
-            onSave={a.onSave}
-            onShare={() => a.showToast("Bağlantı kopyalandı")}
-            onQuiz={a.openQuiz}
-            onReplay={a.onReplay}
-            onSeek={a.onSeek}
+            suspended={a.sheet !== ""}
             onBack={() => a.setScreen("home")}
+            onQuiz={() => a.showToast("Quiz bir sonraki adımda bağlanacak")}
+            showToast={a.showToast}
           />
         )}
 
@@ -199,9 +177,6 @@ export function AppShell() {
             credits={a.credits}
             earnedToday={a.earnedToday}
             stats={a.stats}
-            finishedCount={a.finished.length}
-            saved={a.saved}
-            reels={a.reels}
             selectedCourses={a.selectedCourses}
             interests={a.interests}
             availableInterests={a.availableInterests}
@@ -209,8 +184,8 @@ export function AppShell() {
             onSaveBio={() => a.showToast("Profilin kaydedildi")}
             onToggleCourse={a.toggleCourse}
             onToggleInterest={a.toggleInterest}
-            onUnsave={(id) => a.onSave(id)}
-            onWatchSaved={(id) => a.openFeed(id)}
+            onWatchSaved={(id) => a.openFeed({ kind: "saved", startId: id })}
+            showToast={a.showToast}
             onPhoto={() => a.showToast("Fotoğraf seçimi yakında")}
             onLogout={signOut}
           />
@@ -240,19 +215,6 @@ export function AppShell() {
       />
 
       {a.sheet === "" && <Toast text={a.toast} bottom={navTop + 6} />}
-
-      {a.sheet === "quiz" && a.activeReel && (
-  <QuizSheet
-    quizList={a.activeReel.quiz}
-    quizStep={a.quizStep}
-    quizChoice={a.quizChoice}
-    courseName={a.activeReel.course}
-    toast={a.toast}
-    onClose={() => a.setSheet("")}
-    onPick={(i, options) => a.pickOption(i, options)}
-    onNext={a.nextQuiz}
-  />
-)}
 
       {a.sheet === "ask" && (
         <AskSheet

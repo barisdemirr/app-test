@@ -6,9 +6,8 @@ import React, {
   useRef,
   useState,
 } from "react";
-import type { NativeScrollEvent, NativeSyntheticEvent, ScrollView } from "react-native";
-import type { Question, Quiz, Reel, Reward, Screen, SheetName } from "@/types";
-import { FACT, initialQuestions, initialReels } from "@/mocks";
+import type { Question, Reward, Screen, SheetName } from "@/types";
+import { initialQuestions } from "@/mocks";
 import { toggleIn } from "@/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import type { AuthUser } from "@/api/auth";
@@ -25,6 +24,7 @@ import {
   useUpdatePreferences,
 } from "@/queries";
 import type { QForm } from "@/screens/CreateScreen";
+import type { FeedSource } from "@/screens/FeedScreen";
 
 export type Stats = { total: number; correct: number };
 
@@ -60,35 +60,9 @@ export type AppContextValue = {
   availableInterests: string[];
   toggleInterest: (c: string) => void;
 
-  // ---- reels ----
-  reels: Reel[];
-  visibleReels: Reel[];
-  activeIndex: number;
-  safeIndex: number;
-  activeReel?: Reel;
-  progress: number;
-  playing: boolean;
-  finished: string[];
-  learned: string[];
-  saved: string[];
-  setActiveIndex: (i: number) => void;
-  setProgress: (p: number) => void;
-  setPlaying: React.Dispatch<React.SetStateAction<boolean>>;
-  openFeed: (id?: string) => void;
-  onFeedScrollEnd: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
-  onTogglePlay: (idx: number) => void;
-  onLearn: (id: string) => void;
-  onSave: (id: string) => void;
-  onReplay: (id: string) => void;
-  onSeek: (p: number) => void;
-  feedRef: React.RefObject<ScrollView | null>;
-
-  // ---- quiz ----
-  quizStep: number;
-  quizChoice: number | null;
-  openQuiz: () => void;
-  pickOption: (i: number, options: { text: string; ok: boolean }[]) => void;
-  nextQuiz: () => void;
+  // ---- feed ----
+  feedSource: FeedSource;
+  openFeed: (source?: FeedSource) => void;
 
   // ---- questions ----
   questions: Question[];
@@ -216,20 +190,8 @@ export function AppProvider({
 
   const [joinedCourses, setJoinedCourses] = useState<string[]>([]);
 
-  // reels
-  const [reels, setReels] = useState<Reel[]>(initialReels);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const [playing, setPlaying] = useState(true);
-  const [finished, setFinished] = useState<string[]>([]);
-  const [learned, setLearned] = useState<string[]>([]);
-  const [saved, setSaved] = useState<string[]>([]);
-  const [awarded, setAwarded] = useState<string[]>([]);
-  const feedRef = useRef<ScrollView | null>(null);
-
-  // quiz
-  const [quizStep, setQuizStep] = useState(0);
-  const [quizChoice, setQuizChoice] = useState<number | null>(null);
+  // feed
+  const [feedSource, setFeedSource] = useState<FeedSource>({ kind: "feed" });
 
   // questions
   const [questions, setQuestions] = useState<Question[]>(initialQuestions);
@@ -273,17 +235,6 @@ export function AppProvider({
     [],
   );
 
-  // visible reels
-  const visibleReels = useMemo(
-    () =>
-      reels.filter(
-        (r) => r.course === FACT || selectedCourses.includes(r.course),
-      ),
-    [reels, selectedCourses],
-  );
-  const safeIndex = Math.min(activeIndex, Math.max(0, visibleReels.length - 1));
-  const activeReel: Reel | undefined = visibleReels[safeIndex];
-
   const savePrefs = (courseIds: string[], nextInterests: string[]) =>
     updatePrefs.mutate(
       { courseIds, interests: nextInterests },
@@ -324,136 +275,16 @@ export function AppProvider({
   const joinCourse = (title: string) =>
     setJoinedCourses((j) => (j.includes(title) ? j : [...j, title]));
 
-  const awardCredit = useCallback(() => {
-    if (earnedToday >= dailyCap) {
-      showToast("Günlük kredi tavanına ulaştın");
-      return;
-    }
-    patchBalance(5, 5);
-    showToast("+5 kredi");
-  }, [earnedToday, dailyCap, showToast]);
-
-const openFeed = useCallback(
-  (id?: string) => {
-    let idx = 0;
-    if (id) {
-      const i = visibleReels.findIndex((r) => r.id === id);
-      if (i >= 0) idx = i;
-    }
-    setActiveIndex(idx);
-    setProgress(0);        // her zaman baştan
-    setPlaying(true);      // her zaman oynat
+  const openFeed = useCallback((source: FeedSource = { kind: "feed" }) => {
+    setFeedSource(source);
     setSheet("");
     setScreen("feed");
-  },
-  [visibleReels],
-);
+  }, []);
 
   const goTab = (s: Screen) => {
     setSheet("");
     if (s === "feed") return openFeed();
     setScreen(s);
-  };
-
-  // feed scroll
-const onFeedScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-  const h = e.nativeEvent.layoutMeasurement.height || 1;
-  const i = Math.round(e.nativeEvent.contentOffset.y / h);
-  if (i !== safeIndex && visibleReels[i]) {
-    setActiveIndex(i);
-    setProgress(0);      // her zaman baştan
-    setPlaying(true);    // her zaman oynat
-  }
-};
-
-  // reels timer
-  const activeId = activeReel?.id;
-  const activeFinished = activeId ? finished.includes(activeId) : false;
-
-  // oynatma zamanlayıcısı: progress'i 0 → 1 arası ilerletir
-  const activeIsFact = activeReel?.course === FACT;
-  useEffect(() => {
-    if (screen !== "feed" || !activeId || !playing) return;
-    const durationMs = activeIsFact ? 6000 : 15000;
-    const tickMs = 100;
-    const id = setInterval(() => {
-      setProgress((p) => Math.min(1, p + tickMs / durationMs));
-    }, tickMs);
-    return () => clearInterval(id);
-  }, [screen, activeId, playing, activeIsFact]);
-
-  useEffect(() => {
-  if (screen === "feed" && activeId && progress >= 1) {
-    // sadece durdur, listeye ekleme (zaten var veya yeni eklendi)
-    if (!finished.includes(activeId)) {
-      setFinished((f) => [...f, activeId]);
-    }
-    setPlaying(false);
-  }
-}, [screen, progress, activeId, finished]);
-
-const onTogglePlay = (idx: number) => {
-    if (idx !== safeIndex) return;
-    if (progress >= 1) return;
-    setPlaying((v) => !v);
-  };
-
-  const onLearn = (id: string) => setLearned((l) => toggleIn(l, id));
-
-  const onSave = (id: string) => {
-    setSaved((s) => toggleIn(s, id));
-    showToast(
-      saved.includes(id)
-        ? "Kaydedilenlerden çıkarıldı"
-        : "Kaydettiklerime eklendi",
-    );
-  };
-
-const onReplay = (id: string) => {
-  // 👈 setFinished'den ÇIKARMA — kilit açık kalsın
-  setProgress(0);
-  setPlaying(true);
-};
-
-  const onSeek = (p: number) => {
-    setProgress(p);
-    setPlaying(false);
-  };
-
-  // quiz
-  const quizList = activeReel?.quiz ?? [];
-
-  const openQuiz = () => {
-    if (!activeReel || activeReel.quiz.length === 0) return;
-    setQuizStep(0);
-    setQuizChoice(null);
-    setSheet("quiz");
-  };
-
-  const pickOption = (i: number, options: { text: string; ok: boolean }[]) => {
-    if (quizChoice !== null || !activeReel) return;
-    setQuizChoice(i);
-    const ok = options[i].ok;
-    if (ok) {
-      const key = `${activeReel.id}-${quizStep}`;
-      if (!awarded.includes(key)) {
-        setAwarded((a) => [...a, key]);
-        awardCredit();
-      } else showToast("Bu soruda kredi daha önce alındı");
-    }
-  };
-
-  const nextQuiz = () => {
-    if (quizChoice === null) return showToast("Önce bir seçenek işaretle");
-    if (quizStep < quizList.length - 1) {
-      setQuizStep(quizStep + 1);
-      setQuizChoice(null);
-    } else {
-      setSheet("");
-      setQuizStep(0);
-      setQuizChoice(null);
-      showToast("Quiz tamamlandı");
-    }
   };
 
   // questions
@@ -518,44 +349,8 @@ const onReplay = (id: string) => {
       return setFormError("İlk soru için soru metnini ve 4 şıkkı doldur.");
     if (showQ2 && !qEmpty(q2) && !qComplete(q2))
       return setFormError("Soru 2 için soru metnini ve 4 şıkkı doldur.");
-    const toQuiz = (q: QForm): Quiz => ({
-      q: q.q.trim(),
-      correct: q.correct.trim(),
-      wrong: q.wrong.map((w) => w.trim()),
-      exp: q.exp.trim() || "Üretici bu soru için açıklama eklemedi.",
-    });
-    const quiz = [toQuiz(q1), ...(showQ2 && qComplete(q2) ? [toQuiz(q2)] : [])];
-    const id = `u${Date.now()}`;
-    const reel: Reel = {
-      id,
-      course: formCourse,
-      creator: "Ada Yılmaz",
-      initials: "AY",
-      color: "#7276F4",
-      title: formTitle.trim(),
-      lines: [
-        formTitle.trim(),
-        `Konu: ${formTopic.trim()}`,
-        formCourse,
-        "Yeni içerik ✦",
-      ],
-      result: "Yeni içerik ✦",
-      quiz,
-    };
-    setReels((r) => [reel, ...r]);
-    ensureCourseSelected(formCourse);
-    setFormTitle("");
-    setFormTopic("");
-    setQ1(emptyQ());
-    setQ2(emptyQ());
-    setShowQ2(false);
-    setVideoSelected(false);
-    setFormError("");
-    showToast("Videon yayınlandı");
-    setScreen("feed");
-    setActiveIndex(0);
-    setProgress(0);
-    setPlaying(true);
+    // TODO(aşama 6): POST /videos + PUT /videos/{id}/content
+    showToast("Video yükleme bir sonraki aşamada bağlanacak");
   };
 
   const redeemReward = (r: Reward) => {
@@ -594,33 +389,8 @@ const onReplay = (id: string) => {
     availableInterests,
     toggleInterest,
 
-    reels,
-    visibleReels,
-    activeIndex,
-    safeIndex,
-    activeReel,
-    progress,
-    playing,
-    finished,
-    learned,
-    saved,
-    setActiveIndex,
-    setProgress,
-    setPlaying,
+    feedSource,
     openFeed,
-    onFeedScrollEnd,
-    onTogglePlay,
-    onLearn,
-    onSave,
-    onReplay,
-    onSeek,
-    feedRef,
-
-    quizStep,
-    quizChoice,
-    openQuiz,
-    pickOption,
-    nextQuiz,
 
     questions,
     selectedQuestion,
