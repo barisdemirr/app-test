@@ -45,15 +45,15 @@ public sealed class CreateQaAnswer : IEndpoint
                 return Result.Failure(Error.Forbidden("own_question", "Kendi sorunu cevaplayamazsın.")).ToProblem();
             if (q.Mode != QaMode.Text)
                 return Result.Failure(Error.Conflict("voice_question", "Sesli sorular yazılı cevapla yanıtlanamaz.")).ToProblem();
-            if (q.BestAnswerId is not null)
-                return Result.Failure(Error.Conflict("question_closed", "Bu soruda en iyi cevap seçildi, yeni cevap alınmıyor.")).ToProblem();
+            if (q.BestAnswerId is not null || q.RefundedAtUtc is not null)
+                return Result.Failure(Error.Conflict("question_closed", "Bu soru kapandı, yeni cevap alınmıyor.")).ToProblem();
 
             if (await db.QaAnswers.AsNoTracking().AnyAsync(a => a.QuestionId == id && a.AuthorId == userId, token))
                 return Result.Failure(Error.Conflict("already_answered", "Bu soruya zaten cevap verdin. 2 dakika içinde düzenleyebilirsin.")).ToProblem();
 
             // Atomik sayaç + ilk cevap zamanı (14 günlük seçim süresi buradan başlar)
             var rows = await db.QaQuestions
-                .Where(x => x.Id == id && x.AnswerCount < cfg.MaxAnswersPerQuestion)
+                                .Where(x => x.Id == id && x.RefundedAtUtc == null && x.AnswerCount < cfg.MaxAnswersPerQuestion)
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(x => x.AnswerCount, x => x.AnswerCount + 1)
                     .SetProperty(x => x.FirstAnswerAtUtc, x => x.FirstAnswerAtUtc ?? (DateTime?)now), token);

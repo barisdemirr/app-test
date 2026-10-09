@@ -6,7 +6,7 @@ namespace Dersakis.Features.Qa;
 public sealed record QaQuestionDto(
     Guid Id, string Category, string Topic, string Text, string Mode, int Cost, int Reward,
     Guid AuthorId, string AuthorName, bool IsMine, int AnswerCount,
-    bool HasBestAnswer, Guid? BestAnswerId, DateTime? SelectionDeadlineUtc, DateTime CreatedAtUtc);
+        bool HasBestAnswer, Guid? BestAnswerId, DateTime? SelectionDeadlineUtc, DateTime CreatedAtUtc, bool Refunded);
 
 public sealed record QaAnswerDto(
     Guid Id, Guid AuthorId, string AuthorName, bool IsMine, string Text, bool IsBest,
@@ -20,7 +20,7 @@ public static class QaMapping
         q.BestAnswerId is not null, q.BestAnswerId,
         // Seçim son tarihi: ilk cevaptan sonra BestAnswerWindowDays gün
         q.BestAnswerId is null && q.FirstAnswerAtUtc is { } first ? first.AddDays(cfg.BestAnswerWindowDays) : null,
-        q.CreatedAtUtc);
+                q.CreatedAtUtc, q.RefundedAtUtc is not null);
 
     public static QaAnswerDto ToDto(QaAnswer a, string authorName, Guid viewerId, bool isBest, QaSettings cfg)
     {

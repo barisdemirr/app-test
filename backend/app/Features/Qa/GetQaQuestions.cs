@@ -47,6 +47,9 @@ public sealed class GetQaQuestions : IEndpoint
             join u in db.Users on q.AuthorId equals u.Id
             select new { q, AuthorName = u.DisplayName };
 
+        // İade edilenler (Refunded) listede görünmez; detay ve Refunded bilgisi açık kalır.
+        query = query.Where(x => x.q.RefundedAtUtc == null);
+
         if (categories is { Length: > 0 }) query = query.Where(x => categories.Contains(x.q.Category));
         if (modeFilter is { } mf) query = query.Where(x => x.q.Mode == mf);
         if (st == "open") query = query.Where(x => x.q.BestAnswerId == null);
