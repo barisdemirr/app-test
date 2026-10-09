@@ -6,7 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import type { NativeScrollEvent, NativeSyntheticEvent } from "react-native";
+import type { NativeScrollEvent, NativeSyntheticEvent, ScrollView } from "react-native";
 import type { Question, Quiz, Reel, Reward, Screen, SheetName, UserProfile } from "@/types";
 import {
   DAILY_CAP,
@@ -66,7 +66,7 @@ export type AppContextValue = {
   onSave: (id: string) => void;
   onReplay: (id: string) => void;
   onSeek: (p: number) => void;
-  feedRef: React.RefObject<{ scrollTo: (opts: { y: number; animated: boolean }) => void } | null>;
+  feedRef: React.RefObject<ScrollView | null>;
 
   // ---- quiz ----
   quizStep: number;
@@ -174,7 +174,7 @@ export function AppProvider({
   const [learned, setLearned] = useState<string[]>([]);
   const [saved, setSaved] = useState<string[]>([]);
   const [awarded, setAwarded] = useState<string[]>([]);
-  const feedRef = useRef<{ scrollTo: (opts: { y: number; animated: boolean }) => void } | null>(null);
+  const feedRef = useRef<ScrollView | null>(null);
 
   // quiz
   const [quizStep, setQuizStep] = useState(0);
@@ -297,6 +297,18 @@ const onFeedScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
   // reels timer
   const activeId = activeReel?.id;
   const activeFinished = activeId ? finished.includes(activeId) : false;
+
+  // oynatma zamanlayıcısı: progress'i 0 → 1 arası ilerletir
+  const activeIsFact = activeReel?.course === FACT;
+  useEffect(() => {
+    if (screen !== "feed" || !activeId || !playing) return;
+    const durationMs = activeIsFact ? 6000 : 15000;
+    const tickMs = 100;
+    const id = setInterval(() => {
+      setProgress((p) => Math.min(1, p + tickMs / durationMs));
+    }, tickMs);
+    return () => clearInterval(id);
+  }, [screen, activeId, playing, activeIsFact]);
 
   useEffect(() => {
   if (screen === "feed" && activeId && progress >= 1) {

@@ -19,16 +19,18 @@ onPick: (i: number, options: { text: string; ok: boolean }[]) => void;
 
 export function QuizSheet(p: QuizSheetProps) {
   const q = p.quizList[p.quizStep];
-  if (!q) return null;
 
-  // seçenekleri her adımda karıştır
+  // seçenekleri her adımda karıştır (hook'lar erken return'den önce çağrılmalı)
   const options = useMemo(() => {
+    if (!q) return [];
     return shuffle([
       { text: q.correct, ok: true },
       ...q.wrong.map((w) => ({ text: w, ok: false })),
     ]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.quizStep, q]);
+
+  if (!q) return null;
 
   return (
     <Sheet onClose={p.onClose} toast={p.toast}>
