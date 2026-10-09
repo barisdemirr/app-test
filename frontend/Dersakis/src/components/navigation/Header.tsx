@@ -100,7 +100,7 @@ export function Header(p: HeaderProps) {
         >
           <View
             style={{
-              width: `${Math.min(100, (p.earnedToday / p.dailyCap) * 100)}%`,
+              width: `${p.dailyCap ? Math.min(100, (p.earnedToday / p.dailyCap) * 100) : 0}%`,
               height: 3,
               borderRadius: 9,
               backgroundColor: C.tide,

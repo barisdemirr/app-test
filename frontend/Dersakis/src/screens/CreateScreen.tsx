@@ -2,7 +2,7 @@ import React from "react";
 import { ScrollView, TextInput, View } from "react-native";
 import { CheckCircle2, Upload } from "lucide-react-native";
 import { C, fin, FONT, G_PRIMARY, SH } from "@/theme";
-import { courses } from "@/mocks";
+import { useCourseNames } from "@/queries";
 import type { Quiz } from "@/types";
 import {
   Chip,
@@ -48,6 +48,7 @@ export type CreateScreenProps = {
 };
 
 export function CreateScreen(p: CreateScreenProps) {
+  const courses = useCourseNames();
   const scrollProps = {
     showsVerticalScrollIndicator: false,
     keyboardShouldPersistTaps: "handled" as const,

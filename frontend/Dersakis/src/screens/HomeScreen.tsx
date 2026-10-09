@@ -4,14 +4,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import {
   ChevronDown,
-  Flame,
   PlayCircle,
   Search,
   Sparkles,
 } from "lucide-react-native";
 import { C, DIAG, FONT, fin, G_PRIMARY, SH } from "@/theme";
 import type { Lesson, Question } from "@/types";
-import { courses } from "@/mocks";
+import { useCourseNames } from "@/queries";
 import {
   Avatar,
   Chip,
@@ -27,7 +26,7 @@ export type HomeScreenProps = {
   credits: number;
   earnedToday: number;
   dailyCap: number;
-  streak: number;
+  userName: string;
   accuracyPct: number;
   selectedCourses: string[];
   joinedCourses: string[];
@@ -47,6 +46,8 @@ export type HomeScreenProps = {
 };
 
 export function HomeScreen(p: HomeScreenProps) {
+  const courses = useCourseNames();
+  const firstName = (p.userName.trim().split(" ")[0] || "").toLocaleUpperCase("tr-TR");
   const scrollProps = {
     showsVerticalScrollIndicator: false,
     keyboardShouldPersistTaps: "handled" as const,
@@ -103,7 +104,7 @@ export function HomeScreen(p: HomeScreenProps) {
           }}
         />
         <T f="bb" style={{ fontSize: 12, letterSpacing: 1.2, color: "#AEEBF2" }}>
-          SELAM ADA
+          {firstName ? `SELAM ${firstName}` : "SELAM"}
         </T>
         <T
           f="h"
@@ -116,7 +117,7 @@ export function HomeScreen(p: HomeScreenProps) {
             letterSpacing: -0.7,
           }}
         >
-          {"Merhaba Ada,\ndalışa hazır mısın?"}
+          {`Merhaba ${p.userName.trim().split(" ")[0] || ""},\ndalışa hazır mısın?`}
         </T>
         <T style={{ fontSize: 13, color: C.mist }}>
           Bugün 2 video izle, kredini katla
@@ -141,15 +142,6 @@ export function HomeScreen(p: HomeScreenProps) {
             </T>{" "}
             kredi
           </T>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
-            <Flame size={12} color="#EAF5FF" />
-            <T style={{ fontSize: 11, color: "#EAF5FF" }}>
-              <T f="bb" style={{ fontSize: 11, color: "#EAF5FF" }}>
-                {p.streak}
-              </T>{" "}
-              gün seri
-            </T>
-          </View>
           <T style={{ fontSize: 11, color: "#EAF5FF" }}>
             <T f="bb" style={{ fontSize: 11, color: "#EAF5FF" }}>
               %{p.accuracyPct}

@@ -7,20 +7,34 @@ import React, {
   useState,
 } from "react";
 import type { NativeScrollEvent, NativeSyntheticEvent, ScrollView } from "react-native";
-import type { Question, Quiz, Reel, Reward, Screen, SheetName, UserProfile } from "@/types";
-import {
-  DAILY_CAP,
-  FACT,
-  initialQuestions,
-  initialReels,
-  mockUser,
-} from "@/mocks";
+import type { Question, Quiz, Reel, Reward, Screen, SheetName } from "@/types";
+import { FACT, initialQuestions, initialReels } from "@/mocks";
 import { toggleIn } from "@/utils";
+import { useQueryClient } from "@tanstack/react-query";
+import type { AuthUser } from "@/api/auth";
+import type { BalanceDto } from "@/api/credits";
+import type { Course } from "@/api/courses";
+import { errorMessage } from "@/api/errors";
+import { useAuth } from "@/auth";
+import {
+  queryKeys,
+  useBalance,
+  useCourses,
+  usePreferences,
+  useStats,
+  useUpdatePreferences,
+} from "@/queries";
 import type { QForm } from "@/screens/CreateScreen";
 
 export type Stats = { total: number; correct: number };
 
 export type AppContextValue = {
+  // ---- açılış verisi (dersler, tercihler, bakiye) ----
+  ready: boolean;
+  loadError: boolean;
+  reload: () => void;
+  courses: Course[];
+
   // ---- navigation ----
   screen: Screen;
   sheet: SheetName;
@@ -29,20 +43,21 @@ export type AppContextValue = {
   goTab: (s: Screen) => void;
 
   // ---- user ----
-  user: UserProfile;
+  user: AuthUser;
   credits: number;
   earnedToday: number;
   dailyCap: number;
-  streak: number;
   stats: Stats;
   accuracyPct: number;
 
   // ---- course prefs ----
   selectedCourses: string[];
+  selectedCourseIds: string[];
   toggleCourse: (c: string) => void;
   joinedCourses: string[];
   joinCourse: (title: string) => void;
   interests: string[];
+  availableInterests: string[];
   toggleInterest: (c: string) => void;
 
   // ---- reels ----
@@ -129,7 +144,7 @@ export type AppContextValue = {
 
   // ---- onboarding ----
   onboarded: boolean;
-  setOnboarded: (v: boolean) => void;
+  completeOnboarding: (courseIds: string[]) => Promise<void>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -144,26 +159,62 @@ export function AppProvider({
   const [screen, setScreen] = useState<Screen>("home");
   const [sheet, setSheet] = useState<SheetName>("");
 
-  // user
-  const [user] = useState<UserProfile>(mockUser);
-  const [credits, setCredits] = useState(mockUser.credits);
-  const [earnedToday, setEarnedToday] = useState(mockUser.earnedToday);
-  const [stats, setStats] = useState<Stats>(mockUser.stats);
-  const [bio, setBio] = useState(mockUser.bio);
-  const dailyCap = mockUser.dailyCap;
-  const streak = mockUser.streak;
+  // ---- sunucu verisi (react-query) ----
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  const coursesQ = useCourses();
+  const prefsQ = usePreferences();
+  const balanceQ = useBalance();
+  const statsQ = useStats();
+  const updatePrefs = useUpdatePreferences();
 
-  // course prefs
-  const [selectedCourses, setSelectedCourses] = useState<string[]>([
-    "Matematik 1",
-    "Fizik 1",
-  ]);
+  const ready = !!coursesQ.data && !!prefsQ.data && !!balanceQ.data;
+  const loadError =
+    !ready && (coursesQ.isError || prefsQ.isError || balanceQ.isError);
+  const reload = () => {
+    coursesQ.refetch();
+    prefsQ.refetch();
+    balanceQ.refetch();
+  };
+
+  const courses = coursesQ.data ?? [];
+  const selectedCourseIds = prefsQ.data?.courseIds ?? [];
+  const interests = prefsQ.data?.interests ?? [];
+  const availableInterests = prefsQ.data?.availableInterests ?? [];
+  const selectedCourses = useMemo(
+    () =>
+      (coursesQ.data ?? [])
+        .filter((c) => selectedCourseIds.includes(c.id))
+        .map((c) => c.name),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [coursesQ.data, prefsQ.data],
+  );
+
+  const credits = balanceQ.data?.balance ?? 0;
+  const earnedToday = balanceQ.data?.dailyEarned ?? 0;
+  const dailyCap = balanceQ.data?.dailyCap ?? 0;
+  const stats: Stats = {
+    total: statsQ.data?.answered ?? 0,
+    correct: statsQ.data?.correct ?? 0,
+  };
+
+  // TODO(aşama 5/8): quiz ve ödül henüz yerel; API'ye bağlanınca bu yama kalkacak.
+  const patchBalance = (delta: number, earned = 0) =>
+    qc.setQueryData<BalanceDto>(queryKeys.balance, (b) =>
+      b
+        ? {
+            ...b,
+            balance: b.balance + delta,
+            dailyEarned: Math.min(b.dailyCap, b.dailyEarned + earned),
+            dailyRemaining: Math.max(0, b.dailyRemaining - earned),
+          }
+        : b,
+    );
+
+  // TODO(aşama 9): biyografi /me/profile'a bağlanacak
+  const [bio, setBio] = useState("");
+
   const [joinedCourses, setJoinedCourses] = useState<string[]>([]);
-  const [interests, setInterests] = useState<string[]>([
-    "Matematik",
-    "Fizik",
-    "Uzay",
-  ]);
 
   // reels
   const [reels, setReels] = useState<Reel[]>(initialReels);
@@ -208,7 +259,6 @@ export function AppProvider({
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // onboarding
-  const [onboarded, setOnboarded] = useState(false);
 
   const showToast = useCallback((m: string) => {
     setToast(m);
@@ -234,20 +284,43 @@ export function AppProvider({
   const safeIndex = Math.min(activeIndex, Math.max(0, visibleReels.length - 1));
   const activeReel: Reel | undefined = visibleReels[safeIndex];
 
-  const toggleCourse = (c: string) => {
-    setSelectedCourses((prev) => {
-      if (prev.includes(c)) {
-        if (prev.length === 1) {
-          showToast("En az bir ders seçili olmalı");
-          return prev;
-        }
-        return prev.filter((x) => x !== c);
-      }
-      return [...prev, c];
-    });
+  const savePrefs = (courseIds: string[], nextInterests: string[]) =>
+    updatePrefs.mutate(
+      { courseIds, interests: nextInterests },
+      { onError: (e) => showToast(errorMessage(e)) },
+    );
+
+  const toggleCourse = (name: string) => {
+    const c = courses.find((x) => x.name === name);
+    if (!c) return;
+    const has = selectedCourseIds.includes(c.id);
+    if (has && selectedCourseIds.length === 1) {
+      showToast("En az bir ders seçili olmalı");
+      return;
+    }
+    savePrefs(
+      has ? selectedCourseIds.filter((i) => i !== c.id) : [...selectedCourseIds, c.id],
+      interests,
+    );
   };
 
-  const toggleInterest = (c: string) => setInterests((x) => toggleIn(x, c));
+  // Soru sorulan / video yüklenen ders seçili değilse seçime ekle (mevcut davranış korunur)
+  const ensureCourseSelected = (name: string) => {
+    const c = courses.find((x) => x.name === name);
+    if (c && !selectedCourseIds.includes(c.id)) {
+      savePrefs([...selectedCourseIds, c.id], interests);
+    }
+  };
+
+  const toggleInterest = (name: string) =>
+    savePrefs(selectedCourseIds, toggleIn(interests, name));
+
+  const completeOnboarding = async (courseIds: string[]) => {
+    await updatePrefs.mutateAsync({ courseIds, interests });
+  };
+
+  const onboarded = ready && selectedCourseIds.length > 0;
+
   const joinCourse = (title: string) =>
     setJoinedCourses((j) => (j.includes(title) ? j : [...j, title]));
 
@@ -256,8 +329,7 @@ export function AppProvider({
       showToast("Günlük kredi tavanına ulaştın");
       return;
     }
-    setCredits((c) => c + 5);
-    setEarnedToday((n) => Math.min(dailyCap, n + 5));
+    patchBalance(5, 5);
     showToast("+5 kredi");
   }, [earnedToday, dailyCap, showToast]);
 
@@ -362,10 +434,6 @@ const onReplay = (id: string) => {
     if (quizChoice !== null || !activeReel) return;
     setQuizChoice(i);
     const ok = options[i].ok;
-    setStats((s) => ({
-      total: s.total + 1,
-      correct: s.correct + (ok ? 1 : 0),
-    }));
     if (ok) {
       const key = `${activeReel.id}-${quizStep}`;
       if (!awarded.includes(key)) {
@@ -403,7 +471,7 @@ const onReplay = (id: string) => {
       },
       ...qs,
     ]);
-    setSelectedCourses((s) => (s.includes(askCourse) ? s : [...s, askCourse]));
+    ensureCourseSelected(askCourse);
     setAskText("");
     setAskTopic("");
     setSheet("");
@@ -475,7 +543,7 @@ const onReplay = (id: string) => {
       quiz,
     };
     setReels((r) => [reel, ...r]);
-    setSelectedCourses((s) => (s.includes(formCourse) ? s : [...s, formCourse]));
+    ensureCourseSelected(formCourse);
     setFormTitle("");
     setFormTopic("");
     setQ1(emptyQ());
@@ -492,32 +560,38 @@ const onReplay = (id: string) => {
 
   const redeemReward = (r: Reward) => {
     if (credits < r.price) return;
-    setCredits((c) => c - r.price);
+    patchBalance(-r.price);
     showToast("Ödül alındı");
   };
 
-  const accuracyPct = Math.round((stats.correct / stats.total) * 100);
+  const accuracyPct = statsQ.data?.percent ?? 0;
 
   const value: AppContextValue = {
+    ready,
+    loadError,
+    reload,
+    courses,
+
     screen,
     sheet,
     setScreen,
     setSheet,
     goTab,
 
-    user,
+    user: user as AuthUser, // AppProvider yalnızca oturum açıkken (Root) bağlanır
     credits,
     earnedToday,
     dailyCap,
-    streak,
     stats,
     accuracyPct,
 
     selectedCourses,
+    selectedCourseIds,
     toggleCourse,
     joinedCourses,
     joinCourse,
     interests,
+    availableInterests,
     toggleInterest,
 
     reels,
@@ -595,7 +669,7 @@ const onReplay = (id: string) => {
     showToast,
 
     onboarded,
-    setOnboarded,
+    completeOnboarding,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -2,7 +2,7 @@ import React from "react";
 import { View } from "react-native";
 import { Send } from "lucide-react-native";
 import { C, G_PRIMARY } from "@/theme";
-import { courses } from "@/mocks";
+import { useCourseNames } from "@/queries";
 import { Chip, Field, GradBtn, Sheet, T } from "@/components/ui";
 
 export type AskSheetProps = {
@@ -18,6 +18,7 @@ export type AskSheetProps = {
 };
 
 export function AskSheet(p: AskSheetProps) {
+  const courses = useCourseNames();
   return (
     <Sheet onClose={p.onClose} toast={p.toast}>
       <T f="h" style={{ fontSize: 21, marginTop: 3, marginBottom: 15 }}>

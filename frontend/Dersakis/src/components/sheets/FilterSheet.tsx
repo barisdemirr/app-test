@@ -1,7 +1,7 @@
 import React from "react";
 import { View } from "react-native";
 import { G_PRIMARY } from "@/theme";
-import { courses } from "@/mocks";
+import { useCourseNames } from "@/queries";
 import { Chip, GradBtn, Sheet, T } from "@/components/ui";
 
 export type FilterSheetProps = {
@@ -12,6 +12,7 @@ export type FilterSheetProps = {
 };
 
 export function FilterSheet(p: FilterSheetProps) {
+  const courses = useCourseNames();
   return (
     <Sheet onClose={p.onClose} toast={p.toast}>
       <T f="h" style={{ fontSize: 21, marginTop: 3, marginBottom: 15 }}>

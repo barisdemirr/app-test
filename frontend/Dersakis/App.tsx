@@ -16,7 +16,9 @@ import {
 
 import { C } from "@/theme";
 import { AppProvider } from "@/contexts";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "@/auth";
+import { queryClient, useAppFocus } from "@/queries";
 import { AuthScreen, BootScreen } from "@/screens/auth";
 import { AppShell } from "@/AppShell";
 import { emptyQ } from "@/screens";
@@ -39,6 +41,7 @@ function Root() {
 }
 
 export default function App() {
+  useAppFocus();
   const [loaded, error] = useFonts({
     BricolageGrotesque_500Medium,
     BricolageGrotesque_600SemiBold,
@@ -55,9 +58,11 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <Root />
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Root />
+        </AuthProvider>
+      </QueryClientProvider>
     </SafeAreaProvider>
   );
 }

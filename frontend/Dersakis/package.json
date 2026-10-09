@@ -5,15 +5,19 @@
   "dependencies": {
     "@expo-google-fonts/bricolage-grotesque": "^0.4.1",
     "@expo-google-fonts/instrument-sans": "^0.4.2",
+    "@tanstack/react-query": "^5.104.1",
     "expo": "~57.0.27",
     "expo-font": "~57.0.4",
     "expo-linear-gradient": "~57.0.2",
+    "expo-secure-store": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "lucide-react-native": "^1.54.0",
     "react": "^19.2.3",
     "react-native": "^0.86.3",
+    "react-native-get-random-values": "~1.11.0",
     "react-native-safe-area-context": "~5.7.0",
-    "react-native-svg": "15.15.4"
+    "react-native-svg": "15.15.4",
+    "uuid": "^14.0.2"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",

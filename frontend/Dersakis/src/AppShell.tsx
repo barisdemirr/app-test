@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C } from "@/theme";
 import { useApp } from "@/hooks";
 import { useAuth } from "@/auth";
+import { BootScreen } from "@/screens/auth";
 import { Header } from "@/components/navigation";
 import { BottomNav } from "@/components/navigation";
 import {
@@ -34,7 +35,7 @@ export function AppShell() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const a = useApp();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
 
   const navBottom = insets.bottom + 10;
   const navTop = navBottom + NAV_WRAP;
@@ -89,6 +90,11 @@ export function AppShell() {
     a.screen === "rewards" ||
     a.screen === "profile";
 
+  // dersler, tercihler ve bakiye gelmeden ekranları çizme
+  if (!a.ready) {
+    return <BootScreen offline={a.loadError} onRetry={a.reload} />;
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: C.foam }}>
       <StatusBar style={a.screen === "feed" ? "light" : "dark"} />
@@ -108,7 +114,7 @@ export function AppShell() {
             credits={a.credits}
             earnedToday={a.earnedToday}
             dailyCap={a.dailyCap}
-            streak={a.streak}
+            userName={user?.displayName ?? ""}
             accuracyPct={a.accuracyPct}
             selectedCourses={a.selectedCourses}
             joinedCourses={a.joinedCourses}
@@ -192,13 +198,13 @@ export function AppShell() {
             bio={a.bio}
             credits={a.credits}
             earnedToday={a.earnedToday}
-            streak={a.streak}
             stats={a.stats}
             finishedCount={a.finished.length}
             saved={a.saved}
             reels={a.reels}
             selectedCourses={a.selectedCourses}
             interests={a.interests}
+            availableInterests={a.availableInterests}
             onBioChange={a.setBio}
             onSaveBio={() => a.showToast("Profilin kaydedildi")}
             onToggleCourse={a.toggleCourse}
@@ -285,9 +291,7 @@ export function AppShell() {
       {!a.onboarded && (
         <OnboardingSheet
           toast={a.toast}
-          selectedCourses={a.selectedCourses}
-          onToggleCourse={a.toggleCourse}
-          onContinue={() => a.setOnboarded(true)}
+          onContinue={a.completeOnboarding}
         />
       )}
     </View>

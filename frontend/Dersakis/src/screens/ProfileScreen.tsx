@@ -3,7 +3,7 @@ import { ScrollView, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { PlayCircle, Plus } from "lucide-react-native";
 import { C, DIAG, fin, HORZ, SH } from "@/theme";
-import { courses, interestsList } from "@/mocks";
+import { useCourseNames } from "@/queries";
 import type { Reel } from "@/types";
 import {
   Avatar,
@@ -20,13 +20,13 @@ export type ProfileScreenProps = {
   bio: string;
   credits: number;
   earnedToday: number;
-  streak: number;
   stats: { total: number; correct: number };
   finishedCount: number;
   saved: string[];
   reels: Reel[];
   selectedCourses: string[];
   interests: string[];
+  availableInterests: string[];
   onBioChange: (v: string) => void;
   onSaveBio: () => void;
   onToggleCourse: (c: string) => void;
@@ -38,6 +38,7 @@ export type ProfileScreenProps = {
 };
 
 export function ProfileScreen(p: ProfileScreenProps) {
+  const courses = useCourseNames();
   const scrollProps = {
     showsVerticalScrollIndicator: false,
     keyboardShouldPersistTaps: "handled" as const,
@@ -48,7 +49,7 @@ export function ProfileScreen(p: ProfileScreenProps) {
     },
   };
 
-  const acc = Math.round((p.stats.correct / p.stats.total) * 100);
+  const acc = p.stats.total ? Math.round((p.stats.correct / p.stats.total) * 100) : 0;
 
   return (
     <ScrollView {...scrollProps}>
@@ -301,7 +302,7 @@ export function ProfileScreen(p: ProfileScreenProps) {
         Biliyor muydun? kartları
       </T>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 7 }}>
-        {interestsList.map((c) => (
+        {p.availableInterests.map((c) => (
           <Chip
             key={c}
             active={p.interests.includes(c)}
