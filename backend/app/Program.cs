@@ -72,6 +72,7 @@ builder.Services.AddSingleton<VideoStorage>();
 
 builder.Services.AddHostedService<VideoDraftCleanupService>();
 
+builder.Services.AddSingleton((builder.Configuration.GetSection("Watch").Get<WatchSettings>() ?? new WatchSettings()).EnsureValid());
 
 var app = builder.Build();
 
