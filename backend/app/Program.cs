@@ -63,6 +63,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(o =>
 
 builder.Services.AddHostedService<IdempotencyCleanupService>();
 
+builder.Services.AddSingleton((builder.Configuration.GetSection("Credits").Get<CreditSettings>() ?? new CreditSettings()).EnsureValid());
 
 
 var app = builder.Build();
