@@ -14,11 +14,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<VideoOption> VideoOptions => Set<VideoOption>();
     public DbSet<WatchSession> WatchSessions => Set<WatchSession>();
     public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
+    public DbSet<QaQuestion> QaQuestions => Set<QaQuestion>();
+    public DbSet<QaAnswer> QaAnswers => Set<QaAnswer>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Yayınlanma sırası: atomik, çakışmasız, boşluk olabilir (sorun değil).
         modelBuilder.HasSequence<long>("VideoPublishSeq");
+        modelBuilder.HasSequence<long>("QaQuestionSeq");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 }
