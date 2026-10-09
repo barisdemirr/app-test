@@ -70,6 +70,8 @@ builder.Services.AddScoped<CreditService>();
 builder.Services.AddSingleton((builder.Configuration.GetSection("Videos").Get<VideoSettings>() ?? new VideoSettings()).EnsureValid());
 builder.Services.AddSingleton<VideoStorage>();
 
+builder.Services.AddHostedService<VideoDraftCleanupService>();
+
 
 var app = builder.Build();
 
