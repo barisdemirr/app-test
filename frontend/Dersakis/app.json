@@ -51,6 +51,12 @@
         }
       ]
     ],
-    "scheme": "dersakis"
+    "scheme": "dersakis",
+    "extra": {
+      "eas": {
+        "projectId": "f191d0f6-46d2-420f-b93f-31cf4289a101"
+      }
+    },
+    "owner": "baris31s-team"
   }
 }
