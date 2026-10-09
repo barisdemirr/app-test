@@ -94,6 +94,8 @@ builder.Services.AddEndpoints(typeof(Program).Assembly);
 
 builder.Services.AddSingleton((builder.Configuration.GetSection("Rewards").Get<RewardSettings>() ?? new RewardSettings()).EnsureValid());
 
+builder.Services.AddSingleton((builder.Configuration.GetSection("Profile").Get<ProfileSettings>() ?? new ProfileSettings()).EnsureValid());
+builder.Services.AddSingleton<AvatarStorage>();
 
 var app = builder.Build();
 
