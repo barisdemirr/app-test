@@ -15,7 +15,8 @@ public sealed class Login : IEndpoint
     private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
     public void MapEndpoint(IEndpointRouteBuilder app)
-        => app.MapPost("/auth/login", Handle).AllowAnonymous().WithTags("Auth");
+        => app.MapPost("/auth/login", Handle).AllowAnonymous()
+        .RequireRateLimiting(RateLimitPolicies.Auth).WithTags("Auth");
 
     private static async Task<IResult> Handle(
         LoginRequest req, AppDbContext db, PasswordService passwords, TokenService tokens,

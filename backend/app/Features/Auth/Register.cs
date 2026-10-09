@@ -12,7 +12,8 @@ public sealed record RegisterRequest(string? Email, string? Password, string? Di
 public sealed class Register : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
-        => app.MapPost("/auth/register", Handle).AllowAnonymous().WithTags("Auth");
+        => app.MapPost("/auth/register", Handle).AllowAnonymous()
+        .RequireRateLimiting(RateLimitPolicies.Auth).WithTags("Auth");
 
     private static async Task<IResult> Handle(
         RegisterRequest req, AppDbContext db, PasswordService passwords, TokenService tokens, CancellationToken ct)
