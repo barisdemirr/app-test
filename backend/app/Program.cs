@@ -88,6 +88,9 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
 
 builder.Services.AddSingleton((builder.Configuration.GetSection("Qa").Get<QaSettings>() ?? new QaSettings()).EnsureValid());
 
+builder.Services.AddScoped<QaAwardService>();
+
+builder.Services.AddHostedService<QaAutoAwardService>();
 
 var app = builder.Build();
 
