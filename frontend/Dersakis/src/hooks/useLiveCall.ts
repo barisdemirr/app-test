@@ -79,10 +79,15 @@ export function useLiveCall(sessionId: string, mediaType: "audio" | "video" | un
       clearTimer();
       callRef.current?.stop();
       callRef.current = null;
+      if (f.fatal) {
+        // süre doldu / ilan alındı / oturum kapandı: güncel durum ekrana yansısın
+        qc.invalidateQueries({ queryKey: queryKeys.liveSession(sessionId) });
+        qc.invalidateQueries({ queryKey: queryKeys.live });
+      }
       setFailure(f);
       setPhase("failed");
     },
-    [],
+    [qc, sessionId],
   );
 
   const start = useCallback(async () => {

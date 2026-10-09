@@ -10,7 +10,10 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Sesli ve görüntülü görüşmelerde konuşabilmen için mikrofona erişim gerekir.",
-        "NSCameraUsageDescription": "Görüntülü derslerde görüntünü paylaşabilmen için kameraya erişim gerekir."
+        "NSCameraUsageDescription": "Görüntülü derslerde görüntünü paylaşabilmen için kameraya erişim gerekir.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
       }
     },
     "android": {
@@ -36,7 +39,15 @@
     "plugins": [
       "expo-font",
       "expo-status-bar",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ]
   }
 }

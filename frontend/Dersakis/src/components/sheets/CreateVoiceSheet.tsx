@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View } from "react-native";
 import { C, G_PRIMARY } from "@/theme";
 import { errorMessage } from "@/api/errors";
-import { useCourses, useCreateVoice, useQaConfig } from "@/queries";
+import { useCourses, useCreateVoice } from "@/queries";
 import { Chip, Field, GradBtn, Sheet, T } from "@/components/ui";
 
 /** Sesli soru ilanı: kredi ilan açılırken hemen düşer, kimse katılmazsa iade edilir. */
@@ -20,15 +20,15 @@ export function CreateVoiceSheet({
   onCreated: (sessionId: string) => void;
 }) {
   const courses = useCourses().data ?? [];
-  const cfg = useQaConfig().data;
   const create = useCreateVoice();
   const [courseId, setCourseId] = useState(defaultCourseId);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
 
-  const cost = cfg?.voiceQuestionCost;
-  const short = cost != null && credits < cost;
+  // İlan ücreti sunucu ayarıdır (Live:VoiceCost) ve ilan açılmadan önce öğrenilebilecek bir
+  // uç yok; tutarı uydurmayız. Yetmezse sunucu `insufficient_credits` döner, mesajı gösteririz.
+  const empty = credits <= 0;
   const picked = courses.find((c) => c.id === courseId)?.id ?? courses[0]?.id ?? "";
 
   const submit = () => {
@@ -37,7 +37,7 @@ export function CreateVoiceSheet({
     if (t.length < 3 || t.length > 80) return setError("Başlık 3-80 karakter olmalı.");
     if (d.length < 5 || d.length > 500) return setError("Açıklama 5-500 karakter olmalı.");
     if (!picked) return setError("Bir ders seç.");
-    if (short) return setError("Yeterli kredin yok.");
+    if (empty) return setError("Sesli soru sormak için krediye ihtiyacın var. Önce video izleyip quiz çöz.");
     setError("");
     create.mutate(
       { courseId: picked, title: t, description: d },
@@ -78,11 +78,10 @@ export function CreateVoiceSheet({
         multiline
         maxLength={500}
       />
-      {cost != null && (
-        <T style={{ color: short ? C.error : C.muted, fontSize: 12, marginBottom: 12 }}>
-          {cost} kredi düşecek · bakiyen {credits}
-        </T>
-      )}
+      <T style={{ color: empty ? C.error : C.muted, fontSize: 12, marginBottom: 12 }}>
+        İlan açılınca kredin hemen ayrılır; kimse katılmazsa ya da iptal edersen iade edilir. Bakiyen:{" "}
+        {credits}
+      </T>
       {error ? (
         <T f="bs" style={{ color: C.error, fontSize: 12, marginBottom: 10 }}>
           {error}

@@ -11,6 +11,7 @@ export function LiveShelf({
   action,
   items,
   loading,
+  error,
   empty,
   onSeeAll,
   onOpen,
@@ -19,6 +20,8 @@ export function LiveShelf({
   action?: string;
   items: LiveSessionDto[];
   loading: boolean;
+  /** Liste yüklenemedi (ağ/sunucu): boş durumdan ayrı gösterilir */
+  error?: boolean;
   empty: string;
   onSeeAll?: () => void;
   onOpen: (id: string) => void;
@@ -28,6 +31,10 @@ export function LiveShelf({
       <SectionTitle title={title} action={action} onAction={onSeeAll} />
       {loading ? (
         <T style={{ color: C.muted, fontSize: 12 }}>Yükleniyor…</T>
+      ) : error && items.length === 0 ? (
+        <T style={{ color: C.error, fontSize: 12 }}>
+          Liste yüklenemedi. Ekranı aşağı çekip yenile.
+        </T>
       ) : items.length === 0 ? (
         <T style={{ color: C.muted, fontSize: 12 }}>{empty}</T>
       ) : (

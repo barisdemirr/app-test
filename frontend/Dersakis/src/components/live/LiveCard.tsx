@@ -5,7 +5,7 @@ import { C, DIAG, fin, SH } from "@/theme";
 import { absoluteUrl } from "@/config";
 import type { LiveSessionDto } from "@/api/types";
 import { colorFor, initialsOf } from "@/utils/user";
-import { statusLabel } from "@/utils/live";
+import { outcomeText, statusLabel } from "@/utils/live";
 import { formatDateTime } from "@/utils/time";
 import { Avatar, GradBtn, MiniPill, Press, Sonar, T } from "@/components/ui";
 
@@ -100,6 +100,11 @@ export function LiveCard({
           {lesson && s.scheduledAtUtc && <MiniPill label={formatDateTime(s.scheduledAtUtc)} />}
           {lesson && s.durationMinutes ? <MiniPill label={`${s.durationMinutes} dk`} /> : null}
         </View>
+        {mineOrBusy && outcomeText(s) ? (
+          <T style={{ fontSize: 11, color: C.muted, lineHeight: 16, marginBottom: 9 }}>
+            {outcomeText(s)}
+          </T>
+        ) : null}
         <GradBtn label={action} onPress={() => onOpen(s.id)} small />
       </View>
     </Press>

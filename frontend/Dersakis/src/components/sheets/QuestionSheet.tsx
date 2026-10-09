@@ -172,7 +172,7 @@ function Detail({
         </>
       ) : (
         <T style={{ color: C.muted, fontSize: 12 }}>
-          {sq.hasBestAnswer
+          {sq.hasBestAnswer || sq.refunded
             ? "Bu soru kapandı."
             : sq.isMine
               ? "Kendi sorunu cevaplayamazsın."

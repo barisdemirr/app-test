@@ -24,10 +24,10 @@ import { AppShell } from "@/AppShell";
 import { emptyQ } from "@/screens";
 
 function Root() {
-  const { status, user, retry } = useAuth();
+  const { status, user, retry, signOut } = useAuth();
 
   if (status === "loading" || status === "offline") {
-    return <BootScreen offline={status === "offline"} onRetry={retry} />;
+    return <BootScreen offline={status === "offline"} onRetry={retry} onSignOut={signOut} />;
   }
   if (status === "signedOut" || !user) {
     return <AuthScreen />;

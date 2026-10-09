@@ -1,5 +1,5 @@
 import React from "react";
-import { FlatList, ScrollView, TextInput, View } from "react-native";
+import { FlatList, RefreshControl, ScrollView, TextInput, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import {
@@ -14,6 +14,7 @@ import { ActiveStrip, LiveShelf } from "@/components/live";
 import type { QaQuestion } from "@/api/qa";
 import { colorFor, initialsOf } from "@/utils/user";
 import { useCourseNames } from "@/queries";
+import { FACTS } from "@/constants/facts";
 import {
   Avatar,
   Chip,
@@ -38,6 +39,10 @@ export type HomeScreenProps = {
   voiceSessions: LiveSessionDto[];
   lessonSessions: LiveSessionDto[];
   liveLoading: boolean;
+  liveError: boolean;
+  questionsError: boolean;
+  refreshing: boolean;
+  onRefresh: () => void;
   onOpenSession: (id: string) => void;
   onCreateVoice: () => void;
   onCreateLesson: () => void;
@@ -56,6 +61,15 @@ export type HomeScreenProps = {
 export function HomeScreen(p: HomeScreenProps) {
   const courses = useCourseNames();
   const firstName = (p.userName.trim().split(" ")[0] || "").toLocaleUpperCase("tr-TR");
+  // Günlük ilerleme sunucudan (GET /credits/balance); sabit metin yok
+  const dailyLine =
+    p.dailyCap <= 0
+      ? "Video izle, quiz çöz, kredini katla"
+      : p.earnedToday >= p.dailyCap
+        ? "Bugünkü quiz kredisi tavanına ulaştın"
+        : `Bugün ${p.earnedToday}/${p.dailyCap} kredi kazandın, quiz çözerek devam et`;
+  // Günün bilgisi: gün sayısına göre döner (istemci sabiti, sunucu içeriği değil)
+  const fact = FACTS[Math.floor(Date.now() / 86_400_000) % FACTS.length];
   const scrollProps = {
     showsVerticalScrollIndicator: false,
     keyboardShouldPersistTaps: "handled" as const,
@@ -67,7 +81,12 @@ export function HomeScreen(p: HomeScreenProps) {
   };
 
   return (
-    <ScrollView {...scrollProps}>
+    <ScrollView
+      {...scrollProps}
+      refreshControl={
+        <RefreshControl refreshing={p.refreshing} onRefresh={p.onRefresh} tintColor={C.tide} />
+      }
+    >
       <LinearGradient
         colors={[C.abyss, C.deep, "#28A6CB"]}
         locations={[0.02, 0.55, 1]}
@@ -127,9 +146,7 @@ export function HomeScreen(p: HomeScreenProps) {
         >
           {`Merhaba ${p.userName.trim().split(" ")[0] || ""},\ndalışa hazır mısın?`}
         </T>
-        <T style={{ fontSize: 13, color: C.mist }}>
-          Bugün 2 video izle, kredini katla
-        </T>
+        <T style={{ fontSize: 13, color: C.mist }}>{dailyLine}</T>
         <GradBtn
           label="Akışa dal  ↗"
           onPress={p.onOpenFeed}
@@ -254,6 +271,7 @@ export function HomeScreen(p: HomeScreenProps) {
         onSeeAll={() => p.onOpenList("voice")}
         items={p.voiceSessions}
         loading={p.liveLoading}
+        error={p.liveError}
         empty="Şu an açık sesli soru yok."
         onOpen={p.onOpenSession}
       />
@@ -268,7 +286,8 @@ export function HomeScreen(p: HomeScreenProps) {
         onSeeAll={() => p.onOpenList("lessons")}
         items={p.lessonSessions}
         loading={p.liveLoading}
-        empty="Aramana uygun eğitim bulunamadı."
+        error={p.liveError}
+        empty="Şu an uygun eğitim yok."
         onOpen={p.onOpenSession}
       />
       <View style={{ flexDirection: "row", gap: 8, marginTop: -4, marginBottom: 6 }}>
@@ -304,6 +323,10 @@ export function HomeScreen(p: HomeScreenProps) {
       </View>
       {p.questionsLoading ? (
         <T style={{ color: C.muted, fontSize: 12 }}>Yükleniyor…</T>
+      ) : p.questionsError && p.filteredQuestions.length === 0 ? (
+        <T style={{ color: C.error, fontSize: 12 }}>
+          Sorular yüklenemedi. Ekranı aşağı çekip yenile.
+        </T>
       ) : p.filteredQuestions.length === 0 ? (
         <T style={{ color: C.muted, fontSize: 12 }}>
           Seçtiğin derslerde soru yok. İlk soruyu sen sor.
@@ -395,7 +418,7 @@ export function HomeScreen(p: HomeScreenProps) {
                   {item.answerCount} cevap{item.hasBestAnswer ? " · ✓ çözüldü" : ""}
                 </T>
                 <T f="bb" style={{ color: C.tide, fontSize: 11 }}>
-                  Cevapla →
+                  {item.isMine || item.hasBestAnswer ? "Gör →" : "Cevapla →"}
                 </T>
               </View>
             </Press>
@@ -440,7 +463,7 @@ export function HomeScreen(p: HomeScreenProps) {
               marginTop: 3,
             }}
           >
-            Işık boşlukta saniyede yaklaşık 300.000 km yol alır.
+            {fact.text}
           </T>
         </View>
       </View>

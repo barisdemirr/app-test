@@ -14,6 +14,9 @@ export type ListScreenProps = {
   searchText: string;
   liveItems: LiveSessionDto[];
   liveLoading: boolean;
+  liveError: boolean;
+  questionsError: boolean;
+  onRetry: () => void;
   hasMoreLive: boolean;
   loadingMoreLive: boolean;
   onLoadMoreLive: () => void;
@@ -29,10 +32,12 @@ export type ListScreenProps = {
 };
 
 export function ListScreen(p: ListScreenProps) {
-  const listEmpty =
-    p.listType === "questions"
-      ? !p.questionsLoading && p.listQuestions.length === 0
-      : !p.liveLoading && p.liveItems.length === 0;
+  const isQ = p.listType === "questions";
+  const failed = isQ
+    ? p.questionsError && p.listQuestions.length === 0
+    : p.liveError && p.liveItems.length === 0;
+  const loading = isQ ? p.questionsLoading : p.liveLoading;
+  const listEmpty = !failed && !loading && (isQ ? p.listQuestions.length === 0 : p.liveItems.length === 0);
 
   const scrollProps = {
     showsVerticalScrollIndicator: false,
@@ -151,6 +156,23 @@ export function ListScreen(p: ListScreenProps) {
             </T>
           </Press>
         )}
+        {loading && (
+          <T style={{ color: C.muted, fontSize: 12, textAlign: "center", marginTop: 30 }}>
+            Yükleniyor…
+          </T>
+        )}
+        {failed && (
+          <View style={{ marginTop: 50, alignItems: "center", gap: 12 }}>
+            <T style={{ color: C.error, fontSize: 12, textAlign: "center" }}>
+              Liste yüklenemedi. Bağlantını kontrol edip tekrar dene.
+            </T>
+            <Press onPress={p.onRetry}>
+              <T f="bb" style={{ color: C.tide, fontSize: 12 }}>
+                Tekrar dene
+              </T>
+            </Press>
+          </View>
+        )}
         {listEmpty && (
           <View style={{ marginTop: 70, alignItems: "center" }}>
             <View style={{ position: "absolute", top: -35, opacity: 0.5 }}>
@@ -158,10 +180,10 @@ export function ListScreen(p: ListScreenProps) {
             </View>
             <Search size={27} color={C.tide} />
             <T f="bb" style={{ marginTop: 14 }}>
-              Sonuç bulunamadı.
+              {p.searchText.trim() ? "Sonuç bulunamadı." : "Burada henüz bir şey yok."}
             </T>
             <T style={{ color: C.muted, fontSize: 12, marginTop: 5 }}>
-              Başka bir kelime dene.
+              {p.searchText.trim() ? "Başka bir kelime dene." : "Sonra tekrar bak."}
             </T>
           </View>
         )}

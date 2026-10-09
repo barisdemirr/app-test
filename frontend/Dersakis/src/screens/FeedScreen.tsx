@@ -88,7 +88,10 @@ export function FeedScreen(p: FeedScreenProps) {
     startRef.current = i < 0 ? 0 : i;
   }
   const startIndex = startRef.current ?? 0;
-  const current = activeKey ?? rows[startIndex]?.key ?? null;
+  const current =
+    activeKey && rows.some((r) => r.key === activeKey)
+      ? activeKey
+      : (rows[startIndex]?.key ?? null);
 
   const onViewable = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     const k = viewableItems[0]?.key;

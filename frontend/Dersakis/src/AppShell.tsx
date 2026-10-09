@@ -1,5 +1,6 @@
-import React from "react";
-import { View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { BackHandler, View } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C } from "@/theme";
@@ -41,6 +42,37 @@ export function AppShell() {
   const insets = useSafeAreaInsets();
   const a = useApp();
   const { signOut, user } = useAuth();
+  const qc = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Android geri tuşu: uygulamadan çıkmak yerine bir önceki ekrana dön (sheet'leri Modal kapatır)
+  const aRef = useRef(a);
+  aRef.current = a;
+  useEffect(() => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      const s = aRef.current;
+      if (s.screen === "live") s.closeSession();
+      else if (s.screen === "feed") s.setScreen(s.feedSource.kind === "saved" ? "profile" : "home");
+      else if (s.screen !== "home") s.setScreen("home");
+      else return false; // ana sayfada: sistem varsayılanı (uygulamadan çık)
+      return true;
+    });
+    return () => sub.remove();
+  }, []);
+
+  // Aşağı çek: bakiye, canlı oturumlar, sorular ve bildirim rozeti sunucudan tazelenir
+  const refreshHome = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all(
+        [["balance"], ["live"], ["qa"], ["notifications"], ["stats"]].map((k) =>
+          qc.invalidateQueries({ queryKey: k }),
+        ),
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const navBottom = insets.bottom + 10;
   const navTop = navBottom + NAV_WRAP;
@@ -99,7 +131,7 @@ export function AppShell() {
 
   // dersler, tercihler ve bakiye gelmeden ekranları çizme
   if (!a.ready) {
-    return <BootScreen offline={a.loadError} onRetry={a.reload} />;
+    return <BootScreen offline={a.loadError} onRetry={a.reload} onSignOut={signOut} />;
   }
 
   return (
@@ -132,6 +164,10 @@ export function AppShell() {
             voiceSessions={flatLive(voiceQ).filter(matches)}
             lessonSessions={flatLive(lessonQ).filter(matches)}
             liveLoading={voiceQ.isLoading || lessonQ.isLoading}
+            liveError={voiceQ.isError || lessonQ.isError}
+            questionsError={homeQ.isError}
+            refreshing={refreshing}
+            onRefresh={refreshHome}
             onOpenSession={a.openSession}
             onCreateVoice={() => a.setSheet("voiceCreate")}
             onCreateLesson={() => a.setSheet("lessonCreate")}
@@ -156,7 +192,7 @@ export function AppShell() {
             topInset={insets.top}
             bottomOffset={navTop}
             suspended={a.sheet !== ""}
-            onBack={() => a.setScreen("home")}
+            onBack={() => a.setScreen(a.feedSource.kind === "saved" ? "profile" : "home")}
             onQuiz={(item) => a.openQuiz({ id: item.id, courseName: item.courseName })}
             showToast={a.showToast}
           />
@@ -217,7 +253,7 @@ export function AppShell() {
             topInset={insets.top}
             bodyPad={bodyPad}
             credits={a.credits}
-            onBack={() => a.setScreen("home")}
+            onBack={a.closeSession}
             onJoin={(s) => a.openCall(s.id)}
             showToast={a.showToast}
           />
@@ -241,6 +277,9 @@ export function AppShell() {
             searchText={a.searchText}
             liveItems={flatLive(listLiveQ).filter(matches)}
             liveLoading={listLiveQ.isLoading}
+            liveError={listLiveQ.isError}
+            questionsError={listQ.isError}
+            onRetry={() => (a.listType === "questions" ? listQ.refetch() : listLiveQ.refetch())}
             hasMoreLive={!!listLiveQ.hasNextPage}
             loadingMoreLive={listLiveQ.isFetchingNextPage}
             onLoadMoreLive={() => listLiveQ.fetchNextPage()}

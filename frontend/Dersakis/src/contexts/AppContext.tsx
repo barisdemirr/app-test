@@ -85,6 +85,8 @@ export type AppContextValue = {
   // ---- canlı oturumlar ----
   liveSessionId: string | null;
   openSession: (id: string) => void;
+  /** Oturum / görüşme ekranından, oraya gelinen ekrana dön */
+  closeSession: () => void;
   callSessionId: string | null;
   openCall: (id: string) => void;
 
@@ -185,6 +187,7 @@ export function AppProvider({
   const [listType, setListType] = useState<"lessons" | "voice" | "mine" | "questions">("lessons");
   const [liveSessionId, setLiveSessionId] = useState<string | null>(null);
   const [callSessionId, setCallSessionId] = useState<string | null>(null);
+  const [liveBack, setLiveBack] = useState<Screen>("home");
 
   // create form
   const [video, setVideo] = useState<PickedVideo | null>(null);
@@ -206,7 +209,8 @@ export function AppProvider({
   const showToast = useCallback((m: string) => {
     setToast(m);
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(""), 1800);
+    // uzun hata mesajları okunabilsin
+    toastTimer.current = setTimeout(() => setToast(""), Math.min(5000, 1800 + m.length * 35));
   }, []);
 
   useEffect(
@@ -271,10 +275,13 @@ export function AppProvider({
   };
 
   const openSession = (id: string) => {
+    // geri tuşu, oturuma hangi ekrandan gelindiyse oraya dönsün (liste, ana sayfa...)
+    if (screen !== "live" && screen !== "call") setLiveBack(screen === "feed" ? "home" : screen);
     setLiveSessionId(id);
     setSheet("");
     setScreen("live");
   };
+  const closeSession = () => setScreen(liveBack);
 
   const openCall = (id: string) => {
     setCallSessionId(id);
@@ -398,6 +405,7 @@ export function AppProvider({
     openList,
     liveSessionId,
     openSession,
+    closeSession,
     callSessionId,
     openCall,
 

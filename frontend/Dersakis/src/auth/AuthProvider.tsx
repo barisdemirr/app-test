@@ -39,12 +39,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const user = await fetchMe();
       setState({ status: "signedIn", user });
     } catch (e) {
-      // Ağ/sunucu hatasında token'ı SİLME: kullanıcı yeniden deneyebilsin.
-      if (e instanceof ApiError && (e.status === 0 || e.status >= 500)) {
-        setState({ status: "offline", user: null });
-      } else {
+      // Yalnızca 401 oturumu bitirir. Ağ, 5xx, 429... geçici sorundur: token'ı SİLME,
+      // kullanıcı yeniden deneyebilsin (rapor 6.1).
+      if (e instanceof ApiError && e.status === 401) {
         await setToken(null);
         setState({ status: "signedOut", user: null });
+      } else {
+        setState({ status: "offline", user: null });
       }
     }
   }, []);

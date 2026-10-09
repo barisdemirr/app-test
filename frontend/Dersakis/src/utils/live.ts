@@ -47,7 +47,11 @@ export const statusLabel = (s: LiveSessionDto): string => {
     case "Booked":
       return "Randevu bekleniyor";
     case "Pending":
-      return "Katılım bekleniyor";
+      return s.myRole === "host"
+        ? "Seni bekliyor, katıl"
+        : s.myRole === "guest"
+          ? "İlan sahibi bekleniyor"
+          : "Katılım bekleniyor";
     case "Waiting":
       return "Katılma zamanı";
     case "Live":
@@ -79,9 +83,14 @@ export function outcomeText(s: LiveSessionDto): string | null {
         ? "Kredin iade edildi."
         : "Karşı taraf memnun kalmadı, kredi verilmedi.";
     case "HostNoShow":
-      return payer
-        ? "İlan sahibi/eğitmen gelmedi, kredin iade edildi."
-        : "Zamanında katılmadığın için iptal edildi.";
+      // Gelmeyen taraf HER ZAMAN host'tur (sesli: soran, eğitim: eğitmen)
+      if (s.myRole === "host")
+        return s.kind === "Voice"
+          ? "Zamanında katılmadığın için iptal edildi, kredin iade edildi."
+          : "Zamanında katılmadığın için iptal edildi.";
+      return s.kind === "Voice"
+        ? "İlan sahibi zamanında gelmedi, görüşme iptal edildi."
+        : "Eğitmen gelmedi, kredin iade edildi.";
     case "GuestNoShow":
       return payer
         ? "Katılmadığın için ücret iade edilmedi."

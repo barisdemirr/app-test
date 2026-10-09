@@ -2,6 +2,7 @@ import * as SecureStore from "expo-secure-store";
 import { API } from "@/config";
 
 const TOKEN_KEY = "token";
+const REQUEST_TIMEOUT_MS = 20_000;
 
 /** Sunucu hatası: `code` = ProblemDetails.title (makine okunur), `message` = Türkçe detail. */
 export class ApiError extends Error {
@@ -92,24 +93,41 @@ export async function api<T = any>(path: string, o: RequestOptions = {}): Promis
     body = JSON.stringify(o.body);
   }
 
+  // Sunucu yanıt vermezse istek sonsuza dek asılı kalmasın (yanlış IP, kapalı sunucu...)
+  const ctrl = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    ctrl.abort();
+  }, REQUEST_TIMEOUT_MS);
+  const onAbort = () => ctrl.abort();
+  o.signal?.addEventListener("abort", onAbort);
+
   let res: Response;
+  let text: string;
   try {
     res = await fetch(API + path, {
       method: o.method ?? "GET",
       headers,
       body,
-      signal: o.signal,
+      signal: ctrl.signal,
     });
+    text = await res.text();
   } catch (e: any) {
-    if (e?.name === "AbortError") throw e;
+    if (e?.name === "AbortError" && !timedOut) throw e; // çağıran kendisi iptal etti
     throw new ApiError(
       0,
       "network_error",
-      "Sunucuya ulaşılamadı. İnternet bağlantını kontrol et.",
+      timedOut
+        ? "Sunucu yanıt vermedi. Bağlantını kontrol edip tekrar dene."
+        : "Sunucuya ulaşılamadı. İnternet bağlantını kontrol et.",
     );
+  } finally {
+    clearTimeout(timer);
+    o.signal?.removeEventListener("abort", onAbort);
   }
 
-  const text = await res.text();
+
   const data = text ? safeJson(text) : null;
 
   if (res.status === 401 && token) {
