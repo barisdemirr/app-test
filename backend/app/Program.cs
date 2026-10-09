@@ -97,7 +97,16 @@ builder.Services.AddSingleton((builder.Configuration.GetSection("Rewards").Get<R
 builder.Services.AddSingleton((builder.Configuration.GetSection("Profile").Get<ProfileSettings>() ?? new ProfileSettings()).EnsureValid());
 builder.Services.AddSingleton<AvatarStorage>();
 
+builder.Services.AddSingleton((builder.Configuration.GetSection("Live").Get<LiveSettings>() ?? new LiveSettings()).EnsureValid());
+builder.Services.AddSingleton(builder.Configuration.GetSection("Agora").Get<AgoraSettings>() ?? new AgoraSettings());
+
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    if (AgoraRtcToken.SelfCheck()) app.Logger.LogInformation("Agora token self-check: OK");
+    else app.Logger.LogError("Agora token self-check: BAŞARISIZ. Token kodu resmi algoritmayla uyuşmuyor.");
+}
 
 app.UseForwardedHeaders();
 app.UseExceptionHandler();
