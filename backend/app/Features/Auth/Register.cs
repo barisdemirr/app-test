@@ -1,8 +1,10 @@
 using System.Net.Mail;
 using Dersakis.Domain.Entities;
+using Dersakis.Domain.Enums;
 using Dersakis.Infrastructure.Database;
 using Dersakis.Infrastructure.Services;
 using Dersakis.Shared;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Dersakis.Features.Auth;
@@ -13,10 +15,11 @@ public sealed class Register : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
         => app.MapPost("/auth/register", Handle).AllowAnonymous()
-        .RequireRateLimiting(RateLimitPolicies.Auth).WithTags("Auth");
+              .RequireRateLimiting(RateLimitPolicies.Auth).WithTags("Auth");
 
     private static async Task<IResult> Handle(
-        RegisterRequest req, AppDbContext db, PasswordService passwords, TokenService tokens, CancellationToken ct)
+        RegisterRequest req, AppDbContext db, PasswordService passwords, TokenService tokens,
+        CreditService credits, CreditSettings settings, CancellationToken ct)
     {
         var email = (req.Email ?? "").Trim();
         var name = (req.DisplayName ?? "").Trim();
@@ -32,32 +35,42 @@ public sealed class Register : IEndpoint
 
         var normalized = User.NormalizeEmail(email);
 
-        // Hızlı yol: gereksiz hash maliyetinden kaçınır. Asıl güvence aşağıdaki unique index'tir.
+        // Hızlı yol. Asıl güvence unique index.
         if (await db.Users.AnyAsync(u => u.NormalizedEmail == normalized, ct))
             return EmailTaken();
 
-        var user = new User
-        {
-            Email = email,
-            NormalizedEmail = normalized,
-            DisplayName = name,
-            PasswordHash = passwords.Hash(password)
-        };
+        var passwordHash = passwords.Hash(password); // transaction dışında: pahalı iş, deadlock'ta tekrarlanmasın
 
-        db.Users.Add(user);
         try
         {
-            await db.SaveChangesAsync(ct);
+            var (user, balance) = await db.RunInTransactionAsync<(User User, int Balance)>(async token =>
+            {
+                var u = new User
+                {
+                    Email = email,
+                    NormalizedEmail = normalized,
+                    DisplayName = name,
+                    PasswordHash = passwordHash
+                };
+                db.Users.Add(u);
+                await db.SaveChangesAsync(token);
+
+                // RefId = kullanıcı id'si: ledger unique index'i sayesinde kişiye en fazla bir kez verilir.
+                var grant = await credits.GrantAsync(u.Id, settings.SignupBonus, CreditReason.SignupBonus, u.Id, token);
+                if (grant.IsFailure)
+                    throw new InvalidOperationException($"Kayıt bonusu verilemedi: {grant.Error!.Code}"); // rollback
+
+                return (u, grant.Value.Balance);
+            }, ct);
+
+            var (token, expires) = tokens.Create(user);
+            var dto = new UserDto(user.Id, user.Email, user.DisplayName, balance);
+            return Results.Created("/api/v1/auth/me", new AuthResponse(token, expires, dto));
         }
         catch (DbUpdateException ex) when (ex.IsUniqueViolation())
         {
-            // Yarış: AnyAsync ile Add arasında aynı e-postayı başka bir istek eklediyse buraya düşer.
-            return EmailTaken();
+            return EmailTaken(); // iki eşzamanlı kayıt yarışında kaybeden taraf
         }
-
-        var (token, expires) = tokens.Create(user);
-        var dto = new UserDto(user.Id, user.Email, user.DisplayName, user.CreditBalance);
-        return Results.Created("/api/v1/auth/me", new AuthResponse(token, expires, dto));
     }
 
     private static IResult EmailTaken()
