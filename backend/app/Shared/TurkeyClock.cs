@@ -10,4 +10,8 @@ public static class TurkeyClock
 
     public static DateOnly Today(TimeProvider clock)
         => DateOnly.FromDateTime(clock.GetUtcNow().ToOffset(Offset).DateTime);
+
+    /// <summary>Türkiye saatiyle bugünün 00:00'ının UTC karşılığı (günlük limit sorguları için).</summary>
+    public static DateTime StartOfTodayUtc(TimeProvider clock)
+        => DateTime.SpecifyKind(Today(clock).ToDateTime(TimeOnly.MinValue).Subtract(Offset), DateTimeKind.Utc);
 }

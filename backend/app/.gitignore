@@ -106,3 +106,5 @@ $RECYCLE.BIN/
 
 
 appsettings.Development.json
+
+App_Data/
