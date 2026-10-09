@@ -75,6 +75,8 @@ app.UseAuthentication();
 app.UseRateLimiter();
 app.UseAuthorization();
 
+app.UseIdempotencyBuffering();
+
 var api = app.MapGroup("/api/v1");
 app.MapEndpoints(api);
 
