@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using Dersakis.Infrastructure.Database;
 using Dersakis.Infrastructure.Services;
+using Dersakis.Infrastructure.Services.Push;
 using Dersakis.Shared;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -99,6 +100,11 @@ builder.Services.AddSingleton<AvatarStorage>();
 
 builder.Services.AddSingleton((builder.Configuration.GetSection("Live").Get<LiveSettings>() ?? new LiveSettings()).EnsureValid());
 builder.Services.AddSingleton(builder.Configuration.GetSection("Agora").Get<AgoraSettings>() ?? new AgoraSettings());
+
+builder.Services.AddSingleton((builder.Configuration.GetSection("Push").Get<PushSettings>() ?? new PushSettings()).EnsureValid());
+builder.Services.AddHttpClient<IPushSender, ExpoPushSender>(c => c.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddHostedService<PushDispatchService>();
+
 
 var app = builder.Build();
 
