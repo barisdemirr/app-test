@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace app.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261009153156_AddQuizAttempts")]
-    partial class AddQuizAttempts
+    [Migration("20261009165315_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,8 @@ namespace app.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.HasSequence("QaQuestionSeq");
 
             modelBuilder.HasSequence("VideoPublishSeq");
 
@@ -181,6 +183,181 @@ namespace app.Migrations
                     b.ToTable("IdempotencyKeys", (string)null);
                 });
 
+            modelBuilder.Entity("Dersakis.Domain.Entities.PhoneVerification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("CodeHash")
+                        .IsRequired()
+                        .HasColumnType("binary(32)");
+
+                    b.Property<DateTime?>("ConsumedAtUtc")
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(13)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("IX_PhoneVerifications_CreatedAtUtc");
+
+                    b.HasIndex("Phone")
+                        .IsUnique()
+                        .HasDatabaseName("UX_PhoneVerifications_ActivePerPhone")
+                        .HasFilter("[ConsumedAtUtc] IS NULL");
+
+                    b.HasIndex("Phone", "CreatedAtUtc")
+                        .HasDatabaseName("IX_PhoneVerifications_Phone_CreatedAtUtc");
+
+                    b.ToTable("PhoneVerifications", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PhoneVerifications_Attempts", "[Attempts] >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("Dersakis.Domain.Entities.QaAnswer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<DateTime?>("EditedAtUtc")
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorId", "CreatedAtUtc")
+                        .HasDatabaseName("IX_QaAnswers_AuthorId_CreatedAtUtc");
+
+                    b.HasIndex("QuestionId", "AuthorId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_QaAnswers_QuestionId_AuthorId");
+
+                    b.HasIndex("QuestionId", "CreatedAtUtc")
+                        .HasDatabaseName("IX_QaAnswers_QuestionId_CreatedAtUtc");
+
+                    b.ToTable("QaAnswers", (string)null);
+                });
+
+            modelBuilder.Entity("Dersakis.Domain.Entities.QaQuestion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AnswerCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BestAnswerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("BestChosenAtUtc")
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<byte?>("BestChosenBy")
+                        .HasColumnType("tinyint");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<int>("Cost")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<DateTime?>("FirstAnswerAtUtc")
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<byte>("Mode")
+                        .HasColumnType("tinyint");
+
+                    b.Property<DateTime?>("RefundedAtUtc")
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<int>("Reward")
+                        .HasColumnType("int");
+
+                    b.Property<long>("Seq")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValueSql("NEXT VALUE FOR dbo.QaQuestionSeq");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Topic")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("IX_QaQuestions_PendingRefund")
+                        .HasFilter("[AnswerCount] = 0 AND [RefundedAtUtc] IS NULL AND [Mode] = 1");
+
+                    b.HasIndex("FirstAnswerAtUtc")
+                        .HasDatabaseName("IX_QaQuestions_PendingAward")
+                        .HasFilter("[BestAnswerId] IS NULL AND [FirstAnswerAtUtc] IS NOT NULL");
+
+                    b.HasIndex("Seq")
+                        .IsUnique()
+                        .IsDescending()
+                        .HasDatabaseName("UX_QaQuestions_Seq");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("Seq"), new[] { "Category", "Mode" });
+
+                    b.HasIndex("AuthorId", "Seq")
+                        .HasDatabaseName("IX_QaQuestions_AuthorId_Seq");
+
+                    b.ToTable("QaQuestions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_QaQuestions_AnswerCount", "[AnswerCount] >= 0");
+
+                            t.HasCheckConstraint("CK_QaQuestions_BestConsistent", "([BestAnswerId] IS NULL AND [BestChosenAtUtc] IS NULL AND [BestChosenBy] IS NULL) OR ([BestAnswerId] IS NOT NULL AND [BestChosenAtUtc] IS NOT NULL AND [BestChosenBy] IS NOT NULL)");
+
+                            t.HasCheckConstraint("CK_QaQuestions_RefundExclusive", "[RefundedAtUtc] IS NULL OR ([BestAnswerId] IS NULL AND [AnswerCount] = 0)");
+
+                            t.HasCheckConstraint("CK_QaQuestions_RewardBelowCost", "[Reward] > 0 AND [Reward] < [Cost]");
+                        });
+                });
+
             modelBuilder.Entity("Dersakis.Domain.Entities.QuizAttempt", b =>
                 {
                     b.Property<Guid>("Id")
@@ -254,38 +431,62 @@ namespace app.Migrations
                         .HasMaxLength(40)
                         .HasColumnType("nvarchar(40)");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(254)
-                        .HasColumnType("nvarchar(254)");
-
                     b.Property<int>("FailedLoginCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("InviteCode")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .IsUnicode(false)
+                        .HasColumnType("char(8)")
+                        .IsFixedLength()
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<Guid?>("InvitedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("InvitesUsed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<DateTime?>("LockoutEndUtc")
                         .HasColumnType("datetime2(3)");
-
-                    b.Property<string>("NormalizedEmail")
-                        .IsRequired()
-                        .HasMaxLength(254)
-                        .HasColumnType("nvarchar(254)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(13)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("NormalizedEmail")
+                    b.HasIndex("InviteCode")
                         .IsUnique()
-                        .HasDatabaseName("UX_Users_NormalizedEmail");
+                        .HasDatabaseName("UX_Users_InviteCode");
+
+                    b.HasIndex("InvitedByUserId")
+                        .HasDatabaseName("IX_Users_InvitedByUserId")
+                        .HasFilter("[InvitedByUserId] IS NOT NULL");
+
+                    b.HasIndex("Phone")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Users_Phone");
 
                     b.ToTable("Users", null, t =>
                         {
                             t.HasCheckConstraint("CK_Users_CreditBalance_NonNegative", "[CreditBalance] >= 0");
 
                             t.HasCheckConstraint("CK_Users_DailyEarned_NonNegative", "[DailyEarned] >= 0");
+
+                            t.HasCheckConstraint("CK_Users_InvitesUsed_NonNegative", "[InvitesUsed] >= 0");
+
+                            t.HasCheckConstraint("CK_Users_NotSelfInvited", "[InvitedByUserId] IS NULL OR [InvitedByUserId] <> [Id]");
                         });
                 });
 
@@ -492,6 +693,30 @@ namespace app.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Dersakis.Domain.Entities.QaAnswer", b =>
+                {
+                    b.HasOne("Dersakis.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Dersakis.Domain.Entities.QaQuestion", null)
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Dersakis.Domain.Entities.QaQuestion", b =>
+                {
+                    b.HasOne("Dersakis.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Dersakis.Domain.Entities.QuizAttempt", b =>
                 {
                     b.HasOne("Dersakis.Domain.Entities.VideoQuestion", null)
@@ -517,6 +742,14 @@ namespace app.Migrations
                         .HasForeignKey("VideoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Dersakis.Domain.Entities.User", b =>
+                {
+                    b.HasOne("Dersakis.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("InvitedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Dersakis.Domain.Entities.Video", b =>

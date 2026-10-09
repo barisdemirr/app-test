@@ -180,6 +180,52 @@ namespace app.Migrations
                     b.ToTable("IdempotencyKeys", (string)null);
                 });
 
+            modelBuilder.Entity("Dersakis.Domain.Entities.PhoneVerification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("CodeHash")
+                        .IsRequired()
+                        .HasColumnType("binary(32)");
+
+                    b.Property<DateTime?>("ConsumedAtUtc")
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(13)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("IX_PhoneVerifications_CreatedAtUtc");
+
+                    b.HasIndex("Phone")
+                        .IsUnique()
+                        .HasDatabaseName("UX_PhoneVerifications_ActivePerPhone")
+                        .HasFilter("[ConsumedAtUtc] IS NULL");
+
+                    b.HasIndex("Phone", "CreatedAtUtc")
+                        .HasDatabaseName("IX_PhoneVerifications_Phone_CreatedAtUtc");
+
+                    b.ToTable("PhoneVerifications", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PhoneVerifications_Attempts", "[Attempts] >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Dersakis.Domain.Entities.QaAnswer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -382,38 +428,62 @@ namespace app.Migrations
                         .HasMaxLength(40)
                         .HasColumnType("nvarchar(40)");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(254)
-                        .HasColumnType("nvarchar(254)");
-
                     b.Property<int>("FailedLoginCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("InviteCode")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .IsUnicode(false)
+                        .HasColumnType("char(8)")
+                        .IsFixedLength()
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<Guid?>("InvitedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("InvitesUsed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<DateTime?>("LockoutEndUtc")
                         .HasColumnType("datetime2(3)");
-
-                    b.Property<string>("NormalizedEmail")
-                        .IsRequired()
-                        .HasMaxLength(254)
-                        .HasColumnType("nvarchar(254)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(13)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("NormalizedEmail")
+                    b.HasIndex("InviteCode")
                         .IsUnique()
-                        .HasDatabaseName("UX_Users_NormalizedEmail");
+                        .HasDatabaseName("UX_Users_InviteCode");
+
+                    b.HasIndex("InvitedByUserId")
+                        .HasDatabaseName("IX_Users_InvitedByUserId")
+                        .HasFilter("[InvitedByUserId] IS NOT NULL");
+
+                    b.HasIndex("Phone")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Users_Phone");
 
                     b.ToTable("Users", null, t =>
                         {
                             t.HasCheckConstraint("CK_Users_CreditBalance_NonNegative", "[CreditBalance] >= 0");
 
                             t.HasCheckConstraint("CK_Users_DailyEarned_NonNegative", "[DailyEarned] >= 0");
+
+                            t.HasCheckConstraint("CK_Users_InvitesUsed_NonNegative", "[InvitesUsed] >= 0");
+
+                            t.HasCheckConstraint("CK_Users_NotSelfInvited", "[InvitedByUserId] IS NULL OR [InvitedByUserId] <> [Id]");
                         });
                 });
 
@@ -669,6 +739,14 @@ namespace app.Migrations
                         .HasForeignKey("VideoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Dersakis.Domain.Entities.User", b =>
+                {
+                    b.HasOne("Dersakis.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("InvitedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Dersakis.Domain.Entities.Video", b =>
