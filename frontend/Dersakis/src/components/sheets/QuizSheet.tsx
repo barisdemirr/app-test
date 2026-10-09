@@ -13,7 +13,7 @@ export type QuizSheetProps = {
   courseName: string;
   toast: string;
   onClose: () => void;
-  onPick: (i: number) => void;
+onPick: (i: number, options: { text: string; ok: boolean }[]) => void;
   onNext: () => void;
 };
 
@@ -78,7 +78,7 @@ export function QuizSheet(p: QuizSheetProps) {
         return (
           <Press
             key={o.text}
-            onPress={() => p.onPick(i)}
+            onPress={() => p.onPick(i, options)}
             style={{
               minHeight: 48,
               paddingHorizontal: 15,
