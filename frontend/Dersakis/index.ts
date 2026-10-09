@@ -1,3 +1,5 @@
+// Idempotency-Key için uuid, RN'de rastgele sayı polyfill'ini ister. EN ÜSTTE kalmalı.
+import 'react-native-get-random-values';
 import { registerRootComponent } from 'expo';
 
 import App from './App';
