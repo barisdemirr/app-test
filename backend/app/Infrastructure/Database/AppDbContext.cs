@@ -9,10 +9,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<IdempotencyKey> IdempotencyKeys => Set<IdempotencyKey>();
     public DbSet<CreditTransaction> CreditTransactions => Set<CreditTransaction>();
     public DbSet<Course> Courses => Set<Course>();
+    public DbSet<Video> Videos => Set<Video>();
+    public DbSet<VideoQuestion> VideoQuestions => Set<VideoQuestion>();
+    public DbSet<VideoOption> VideoOptions => Set<VideoOption>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Configurations klasöründeki tüm IEntityTypeConfiguration sınıflarını otomatik bulur.
+        // Yayınlanma sırası: atomik, çakışmasız, boşluk olabilir (sorun değil).
+        modelBuilder.HasSequence<long>("VideoPublishSeq");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 }

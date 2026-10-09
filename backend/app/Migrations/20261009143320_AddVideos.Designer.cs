@@ -4,6 +4,7 @@ using Dersakis.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace app.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261009143320_AddVideos")]
+    partial class AddVideos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -307,10 +310,11 @@ namespace app.Migrations
             modelBuilder.Entity("Dersakis.Domain.Entities.VideoOption", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2(3)");
+                        .HasColumnType("datetime2");
 
                     b.Property<bool>("IsCorrect")
                         .HasColumnType("bit");
@@ -320,17 +324,13 @@ namespace app.Migrations
 
                     b.Property<string>("Text")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("QuestionId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_VideoOptions_OneCorrectPerQuestion")
-                        .HasFilter("[IsCorrect] = 1");
+                    b.HasIndex("QuestionId");
 
-                    b.ToTable("VideoOptions", (string)null);
+                    b.ToTable("VideoOptions");
                 });
 
             modelBuilder.Entity("Dersakis.Domain.Entities.VideoQuestion", b =>
