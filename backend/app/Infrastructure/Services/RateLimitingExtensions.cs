@@ -17,9 +17,9 @@ public static class RateLimitingExtensions
 
             // Her isteğe uygulanan genel tavan; endpoint'e özel politikalar bunun ÜSTÜNE ayrıca uygulanır.
             o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
-                ctx.Request.Path.StartsWithSegments("/api/v1/health")
-                    ? RateLimitPartition.GetNoLimiter("health")
-                    : Sliding(UserOrIp(ctx), s.Global));
+    IsUnmetered(ctx.Request.Path)
+        ? RateLimitPartition.GetNoLimiter("unmetered")
+        : Sliding(UserOrIp(ctx), s.Global));
 
             o.AddPolicy(RateLimitPolicies.Auth, ctx => Sliding(Ip(ctx), s.Auth)); // anonim: yalnızca IP
             o.AddPolicy(RateLimitPolicies.Heartbeat, ctx => Sliding(UserOrIp(ctx), s.Heartbeat));
@@ -59,4 +59,10 @@ public static class RateLimitingExtensions
 
     private static string UserOrIp(HttpContext ctx)
         => ctx.User.GetUserId() is { } id ? "u:" + id : Ip(ctx);
+
+
+    /// <summary>Sağlık kontrolü ve video akışı global limite takılmaz (bant genişliği işi, API kötüye kullanımı değil).</summary>
+    private static bool IsUnmetered(PathString path)
+        => path.StartsWithSegments("/api/v1/health")
+           || (path.StartsWithSegments("/api/v1/videos") && path.Value!.EndsWith("/stream", StringComparison.Ordinal));
 }
