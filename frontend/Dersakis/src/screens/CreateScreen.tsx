@@ -3,7 +3,8 @@ import { ScrollView, TextInput, View } from "react-native";
 import { CheckCircle2, Upload } from "lucide-react-native";
 import { C, fin, FONT, G_PRIMARY, SH } from "@/theme";
 import { useCourseNames } from "@/queries";
-import type { Quiz } from "@/types";
+import type { PickedVideo } from "@/utils/videoForm";
+import type { UploadPhase } from "@/hooks/useVideoUpload";
 import {
   Chip,
   Field,
@@ -29,7 +30,10 @@ export const emptyQ = (): QForm => ({
 
 export type CreateScreenProps = {
   bodyPad: number;
-  videoSelected: boolean;
+  video: PickedVideo | null;
+  uploadPhase: UploadPhase;
+  /** 0..1 */
+  uploadProgress: number;
   formTitle: string;
   formTopic: string;
   formCourse: string;
@@ -49,6 +53,9 @@ export type CreateScreenProps = {
 
 export function CreateScreen(p: CreateScreenProps) {
   const courses = useCourseNames();
+  const busy = p.uploadPhase !== "idle";
+  const mmss = (ms: number) =>
+    `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`;
   const scrollProps = {
     showsVerticalScrollIndicator: false,
     keyboardShouldPersistTaps: "handled" as const,
@@ -168,25 +175,41 @@ export function CreateScreen(p: CreateScreenProps) {
         >
           <Upload size={19} color={C.tide} />
         </View>
-        {p.videoSelected ? (
-          <View
-            style={{
-              alignSelf: "stretch",
-              padding: 10,
-              borderRadius: 13,
-              backgroundColor: "#fff",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            <CheckCircle2 size={18} color={C.success} />
-            <View>
-              <T f="bb" style={{ fontSize: 12 }}>
-                ders_videosu.mp4
-              </T>
-              <T style={{ color: C.success, fontSize: 10 }}>0:45 · uygun</T>
+        {p.video ? (
+          <View style={{ alignSelf: "stretch", gap: 10 }}>
+            <View
+              style={{
+                padding: 10,
+                borderRadius: 13,
+                backgroundColor: "#fff",
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <CheckCircle2 size={18} color={C.success} />
+              <View style={{ flex: 1 }}>
+                <T f="bb" style={{ fontSize: 12 }} numberOfLines={1}>
+                  {p.video.name}
+                </T>
+                <T style={{ color: C.success, fontSize: 10 }}>
+                  {p.video.durationMs != null ? `${mmss(p.video.durationMs)} · ` : ""}
+                  {p.video.sizeBytes != null
+                    ? `${(p.video.sizeBytes / 1048576).toFixed(1)} MB · `
+                    : ""}
+                  uygun
+                </T>
+              </View>
             </View>
+            {!busy && (
+              <GradBtn
+                label="Başka video seç"
+                small
+                colors={G_PRIMARY}
+                radius={{ borderRadius: 12 }}
+                onPress={p.onSelectVideo}
+              />
+            )}
           </View>
         ) : (
           <>
@@ -201,7 +224,7 @@ export function CreateScreen(p: CreateScreenProps) {
                 marginBottom: 10,
               }}
             >
-              MP4 · 20 sn – 2 dk
+              MP4 · 20 sn – 2 dk · en çok 100 MB
             </T>
             <GradBtn
               label="Video seç"
@@ -313,8 +336,35 @@ export function CreateScreen(p: CreateScreenProps) {
           {p.formError}
         </T>
       ) : null}
+      {busy && (
+        <View style={{ marginBottom: 12 }}>
+          <View
+            style={{ height: 6, borderRadius: 8, backgroundColor: C.mist, overflow: "hidden" }}
+          >
+            <View
+              style={{
+                width: `${Math.round(
+                  (p.uploadPhase === "uploading" ? p.uploadProgress : 0) * 100,
+                )}%`,
+                height: 6,
+                backgroundColor: C.tide,
+              }}
+            />
+          </View>
+          <T style={{ color: C.muted, fontSize: 11, marginTop: 6 }}>
+            Yükleme bitene kadar uygulamayı açık tut.
+          </T>
+        </View>
+      )}
       <GradBtn
-        label="Yayınla"
+        label={
+          p.uploadPhase === "creating"
+            ? "Hazırlanıyor…"
+            : p.uploadPhase === "uploading"
+              ? `Yükleniyor %${Math.round(p.uploadProgress * 100)}`
+              : "Yayınla"
+        }
+        disabled={busy}
         onPress={p.onPublish}
         style={[{ marginBottom: 15 }, SH.soft]}
       />

@@ -142,7 +142,9 @@ export function AppShell() {
         {a.screen === "new" && (
           <CreateScreen
             bodyPad={bodyPad}
-            videoSelected={a.videoSelected}
+            video={a.video}
+            uploadPhase={a.uploadPhase}
+            uploadProgress={a.uploadProgress}
             formTitle={a.formTitle}
             formTopic={a.formTopic}
             formCourse={a.formCourse}
@@ -150,9 +152,7 @@ export function AppShell() {
             q2={a.q2}
             showQ2={a.showQ2}
             formError={a.formError}
-            onSelectVideo={() => {
-              a.setVideoSelected(true);
-            }}
+            onSelectVideo={a.pickVideo}
             onFormTitle={a.setFormTitle}
             onFormTopic={a.setFormTopic}
             onFormCourse={a.setFormCourse}

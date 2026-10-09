@@ -10,6 +10,7 @@ import type { Question, Reward, Screen, SheetName } from "@/types";
 import { initialQuestions } from "@/mocks";
 import { toggleIn } from "@/utils";
 import { useQueryClient } from "@tanstack/react-query";
+import * as ImagePicker from "expo-image-picker";
 import type { AuthUser } from "@/api/auth";
 import type { BalanceDto } from "@/api/credits";
 import type { Course } from "@/api/courses";
@@ -23,6 +24,13 @@ import {
   useStats,
   useUpdatePreferences,
 } from "@/queries";
+import { useVideoUpload, type UploadPhase } from "@/hooks/useVideoUpload";
+import {
+  buildQuestions,
+  checkVideo,
+  validateForm,
+  type PickedVideo,
+} from "@/utils/videoForm";
 import type { QForm } from "@/screens/CreateScreen";
 import type { FeedSource } from "@/screens/FeedScreen";
 
@@ -90,8 +98,10 @@ export type AppContextValue = {
   openList: (t: "lessons" | "questions") => void;
 
   // ---- create form ----
-  videoSelected: boolean;
-  setVideoSelected: (v: boolean) => void;
+  video: PickedVideo | null;
+  pickVideo: () => void;
+  uploadPhase: UploadPhase;
+  uploadProgress: number;
   formTitle: string;
   setFormTitle: (v: string) => void;
   formTopic: string;
@@ -105,7 +115,7 @@ export type AppContextValue = {
   showQ2: boolean;
   setShowQ2: (v: boolean) => void;
   formError: string;
-  publish: () => void;
+  publish: () => Promise<void>;
 
   // ---- bio ----
   bio: string;
@@ -215,10 +225,11 @@ export function AppProvider({
   const [listType, setListType] = useState<"lessons" | "questions">("lessons");
 
   // create form
-  const [videoSelected, setVideoSelected] = useState(false);
+  const [video, setVideo] = useState<PickedVideo | null>(null);
+  const upload = useVideoUpload();
   const [formTitle, setFormTitle] = useState("");
   const [formTopic, setFormTopic] = useState("");
-  const [formCourse, setFormCourse] = useState("Matematik 1");
+  const [formCourse, setFormCourse] = useState("");
   const [q1, setQ1] = useState<QForm>(emptyQ);
   const [q2, setQ2] = useState<QForm>(emptyQ);
   const [showQ2, setShowQ2] = useState(false);
@@ -343,22 +354,68 @@ export function AppProvider({
   };
 
   // create
-  const qComplete = (q: QForm) =>
-    q.q.trim() && q.correct.trim() && q.wrong.every((w) => w.trim());
-  const qEmpty = (q: QForm) =>
-    !q.q.trim() && !q.correct.trim() && q.wrong.every((w) => !w.trim());
+  // Ders seçilmediyse (ya da eski ad artık yoksa) seçili derslerden ilkini kullan
+  const formCourseName = courses.some((c) => c.name === formCourse)
+    ? formCourse
+    : (selectedCourses[0] ?? courses[0]?.name ?? "");
 
-  const publish = () => {
-    if (!formTitle.trim() || !formTopic.trim())
-      return setFormError("Başlık ve konu gerekli.");
-    if (!videoSelected)
-      return setFormError("20 sn ile 2 dk arasında bir video seç.");
-    if (!qComplete(q1))
-      return setFormError("İlk soru için soru metnini ve 4 şıkkı doldur.");
-    if (showQ2 && !qEmpty(q2) && !qComplete(q2))
-      return setFormError("Soru 2 için soru metnini ve 4 şıkkı doldur.");
-    // TODO(aşama 6): POST /videos + PUT /videos/{id}/content
-    showToast("Video yükleme bir sonraki aşamada bağlanacak");
+  const pickVideo = async () => {
+    try {
+      const r = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["videos"],
+        allowsEditing: false,
+      });
+      if (r.canceled || !r.assets[0]) return;
+      const a = r.assets[0];
+      const v: PickedVideo = {
+        uri: a.uri,
+        name: a.fileName ?? "video.mp4",
+        durationMs: a.duration ?? null,
+        sizeBytes: a.fileSize ?? null,
+      };
+      const err = checkVideo({ ...v, mimeType: a.mimeType });
+      if (err) {
+        setVideo(null);
+        return setFormError(err);
+      }
+      setFormError("");
+      setVideo(v);
+    } catch {
+      setFormError("Video seçilemedi.");
+    }
+  };
+
+  const publish = async () => {
+    if (upload.busy) return;
+    const input = { title: formTitle, topic: formTopic, q1, q2, showQ2, video };
+    const err = validateForm(input);
+    if (err) return setFormError(err);
+    const course = courses.find((c) => c.name === formCourseName);
+    if (!course || !video) return setFormError("Bir ders seç.");
+    setFormError("");
+    try {
+      // Yükleme bitene kadar uygulama açık kalmalı; kesilirse aynı taslakla yeniden denenir
+      await upload.run(
+        {
+          courseId: course.id,
+          title: formTitle.trim(),
+          topic: formTopic.trim(),
+          questions: buildQuestions(input),
+        },
+        video.uri,
+      );
+    } catch (e) {
+      return setFormError(errorMessage(e));
+    }
+    ensureCourseSelected(formCourseName);
+    setFormTitle("");
+    setFormTopic("");
+    setQ1(emptyQ());
+    setQ2(emptyQ());
+    setShowQ2(false);
+    setVideo(null);
+    showToast("Videon yayınlandı");
+    openFeed();
   };
 
   const redeemReward = (r: Reward) => {
@@ -423,13 +480,15 @@ export function AppProvider({
     listType,
     openList,
 
-    videoSelected,
-    setVideoSelected,
+    video,
+    pickVideo,
+    uploadPhase: upload.phase,
+    uploadProgress: upload.progress,
     formTitle,
     setFormTitle,
     formTopic,
     setFormTopic,
-    formCourse,
+    formCourse: formCourseName,
     setFormCourse,
     q1,
     setQ1,
