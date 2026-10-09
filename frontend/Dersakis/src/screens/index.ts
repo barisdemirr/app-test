@@ -5,3 +5,4 @@ export * from "./RewardsScreen";
 export * from "./ProfileScreen";
 export * from "./ListScreen";
 export * from "./LiveSessionScreen";
+export * from "./CallScreen";

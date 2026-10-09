@@ -25,6 +25,7 @@ import {
   HomeScreen,
   ListScreen,
   LiveSessionScreen,
+  CallScreen,
   ProfileScreen,
   RewardsScreen,
 } from "@/screens";
@@ -103,7 +104,7 @@ export function AppShell() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.foam }}>
-      <StatusBar style={a.screen === "feed" ? "light" : "dark"} />
+      <StatusBar style={a.screen === "feed" || a.screen === "call" ? "light" : "dark"} />
 
       {showHeader && (
         <Header
@@ -217,8 +218,17 @@ export function AppShell() {
             bodyPad={bodyPad}
             credits={a.credits}
             onBack={() => a.setScreen("home")}
-            // TODO(aşama 12): POST /live/{id}/join + Agora kanalına gir
-            onJoin={() => a.showToast("Görüşme ekranı bir sonraki adımda bağlanacak")}
+            onJoin={(s) => a.openCall(s.id)}
+            showToast={a.showToast}
+          />
+        )}
+
+        {a.screen === "call" && a.callSessionId && (
+          <CallScreen
+            id={a.callSessionId}
+            topInset={insets.top}
+            bottomInset={insets.bottom}
+            onClose={() => a.openSession(a.callSessionId!)}
             showToast={a.showToast}
           />
         )}
@@ -247,13 +257,15 @@ export function AppShell() {
         )}
       </View>
 
-      <BottomNav
-        screen={a.screen}
-        navBottom={navBottom}
-        navHeight={NAV_H}
-        navWrap={NAV_WRAP}
-        onNavigate={a.goTab}
-      />
+      {a.screen !== "call" && (
+        <BottomNav
+          screen={a.screen}
+          navBottom={navBottom}
+          navHeight={NAV_H}
+          navWrap={NAV_WRAP}
+          onNavigate={a.goTab}
+        />
+      )}
 
       {a.sheet === "" && <Toast text={a.toast} bottom={navTop + 6} />}
 

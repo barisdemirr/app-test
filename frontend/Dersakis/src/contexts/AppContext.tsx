@@ -85,6 +85,8 @@ export type AppContextValue = {
   // ---- canlı oturumlar ----
   liveSessionId: string | null;
   openSession: (id: string) => void;
+  callSessionId: string | null;
+  openCall: (id: string) => void;
 
   // ---- create form ----
   video: PickedVideo | null;
@@ -182,6 +184,7 @@ export function AppProvider({
   const [courseFilter, setCourseFilter] = useState("Tümü");
   const [listType, setListType] = useState<"lessons" | "voice" | "mine" | "questions">("lessons");
   const [liveSessionId, setLiveSessionId] = useState<string | null>(null);
+  const [callSessionId, setCallSessionId] = useState<string | null>(null);
 
   // create form
   const [video, setVideo] = useState<PickedVideo | null>(null);
@@ -271,6 +274,12 @@ export function AppProvider({
     setLiveSessionId(id);
     setSheet("");
     setScreen("live");
+  };
+
+  const openCall = (id: string) => {
+    setCallSessionId(id);
+    setSheet("");
+    setScreen("call");
   };
 
   const openList = (t: "lessons" | "voice" | "mine" | "questions") => {
@@ -389,6 +398,8 @@ export function AppProvider({
     openList,
     liveSessionId,
     openSession,
+    callSessionId,
+    openCall,
 
     video,
     pickVideo,
