@@ -12,6 +12,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Video> Videos => Set<Video>();
     public DbSet<VideoQuestion> VideoQuestions => Set<VideoQuestion>();
     public DbSet<VideoOption> VideoOptions => Set<VideoOption>();
+    public DbSet<WatchSession> WatchSessions => Set<WatchSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
