@@ -22,6 +22,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<VideoMark> VideoMarks => Set<VideoMark>();
     public DbSet<UserCourse> UserCourses => Set<UserCourse>();
     public DbSet<UserInterest> UserInterests => Set<UserInterest>();
+    public DbSet<LiveSession> LiveSessions => Set<LiveSession>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<DeviceToken> DeviceTokens => Set<DeviceToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
