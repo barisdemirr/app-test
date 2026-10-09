@@ -10,3 +10,4 @@ export * from "./feedCache";
 export * from "./useVideoFlag";
 export * from "./useQuiz";
 export * from "./useQa";
+export * from "./useRewards";

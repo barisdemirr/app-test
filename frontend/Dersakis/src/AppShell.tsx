@@ -169,7 +169,8 @@ export function AppShell() {
           <RewardsScreen
             credits={a.credits}
             bodyPad={bodyPad}
-            onRedeem={a.redeemReward}
+            toast={a.toast}
+            showToast={a.showToast}
           />
         )}
 

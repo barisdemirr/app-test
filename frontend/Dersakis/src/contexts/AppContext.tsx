@@ -6,17 +6,14 @@ import React, {
   useRef,
   useState,
 } from "react";
-import type { Reward, Screen, SheetName } from "@/types";
+import type { Screen, SheetName } from "@/types";
 import { toggleIn } from "@/utils";
-import { useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import type { AuthUser } from "@/api/auth";
-import type { BalanceDto } from "@/api/credits";
 import type { Course } from "@/api/courses";
 import { errorMessage } from "@/api/errors";
 import { useAuth } from "@/auth";
 import {
-  queryKeys,
   useBalance,
   useCourses,
   usePreferences,
@@ -111,9 +108,6 @@ export type AppContextValue = {
   bio: string;
   setBio: (v: string) => void;
 
-  // ---- rewards ----
-  redeemReward: (r: Reward) => void;
-
   // ---- toast ----
   toast: string;
   showToast: (m: string) => void;
@@ -136,7 +130,6 @@ export function AppProvider({
   const [sheet, setSheet] = useState<SheetName>("");
 
   // ---- sunucu verisi (react-query) ----
-  const qc = useQueryClient();
   const { user } = useAuth();
   const coursesQ = useCourses();
   const prefsQ = usePreferences();
@@ -173,19 +166,6 @@ export function AppProvider({
     total: statsQ.data?.answered ?? 0,
     correct: statsQ.data?.correct ?? 0,
   };
-
-  // TODO(aşama 8): ödül henüz yerel; API'ye bağlanınca bu yama kalkacak.
-  const patchBalance = (delta: number, earned = 0) =>
-    qc.setQueryData<BalanceDto>(queryKeys.balance, (b) =>
-      b
-        ? {
-            ...b,
-            balance: b.balance + delta,
-            dailyEarned: Math.min(b.dailyCap, b.dailyEarned + earned),
-            dailyRemaining: Math.max(0, b.dailyRemaining - earned),
-          }
-        : b,
-    );
 
   // TODO(aşama 9): biyografi /me/profile'a bağlanacak
   const [bio, setBio] = useState("");
@@ -367,12 +347,6 @@ export function AppProvider({
     openFeed();
   };
 
-  const redeemReward = (r: Reward) => {
-    if (credits < r.price) return;
-    patchBalance(-r.price);
-    showToast("Ödül alındı");
-  };
-
   const accuracyPct = statsQ.data?.percent ?? 0;
 
   const value: AppContextValue = {
@@ -440,8 +414,6 @@ export function AppProvider({
 
     bio,
     setBio,
-
-    redeemReward,
 
     toast,
     showToast,

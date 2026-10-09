@@ -1,46 +1,33 @@
-import React from "react";
+import React, { useState } from "react";
 import { ScrollView, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import {
-  CheckCircle2,
-  Crown,
-  Gem,
-  Sparkles,
-  UserRound,
-} from "lucide-react-native";
+import { Gem } from "lucide-react-native";
 import { C, DIAG, fin, SH } from "@/theme";
-import type { Reward, RewardIcon } from "@/types";
-import { rewardsData } from "@/mocks";
-import {
-  GradBtn,
-  SectionTitle,
-  Sonar,
-  T,
-} from "@/components/ui";
+import * as Clipboard from "expo-clipboard";
+import { errorMessage } from "@/api/errors";
+import type { RewardItem } from "@/api/rewards";
+import { useRedemptions, useRewards } from "@/queries";
+import { formatDateTime } from "@/utils/time";
+import { RedeemSheet } from "@/components/sheets";
+import { Chip, GradBtn, SectionTitle, Sonar, T } from "@/components/ui";
 
 export type RewardsScreenProps = {
   credits: number;
   bodyPad: number;
-  onRedeem: (r: Reward) => void;
-};
-
-const rewardIcon = (i: RewardIcon) => {
-  const p = { size: 22, color: "#fff" };
-  switch (i) {
-    case "crown":
-      return <Crown {...p} />;
-    case "spark":
-      return <Sparkles {...p} />;
-    case "mentor":
-      return <UserRound {...p} />;
-    case "exam":
-      return <CheckCircle2 {...p} />;
-    default:
-      return <Gem {...p} />;
-  }
+  toast: string;
+  showToast: (m: string) => void;
 };
 
 export function RewardsScreen(p: RewardsScreenProps) {
+  const rewardsQ = useRewards();
+  const redemptionsQ = useRedemptions();
+  const [selected, setSelected] = useState<RewardItem | null>(null);
+  const items = rewardsQ.data?.items ?? [];
+  const elig = rewardsQ.data?.eligibility;
+  const mine = redemptionsQ.data?.pages.flatMap((pg) => pg.items) ?? [];
+
+  const stockText = (r: RewardItem) =>
+    r.stockRemaining == null ? "" : ` · ${r.stockRemaining} adet kaldı`;
   const scrollProps = {
     showsVerticalScrollIndicator: false,
     keyboardShouldPersistTaps: "handled" as const,
@@ -99,68 +86,129 @@ export function RewardsScreen(p: RewardsScreenProps) {
         </T>
       </LinearGradient>
 
+      {elig?.eligibleAtUtc && (
+        <T style={{ color: C.coral, fontSize: 12, marginTop: 12 }}>
+          Hesabın {formatDateTime(elig.eligibleAtUtc)} tarihinde ödül almaya hazır olacak.
+        </T>
+      )}
+
       <SectionTitle title="Senin için seçtik" />
-      <View style={{ gap: 10 }}>
-        {rewardsData.map((r) => {
-          const can = p.credits >= r.price;
-          return (
+      {rewardsQ.isLoading ? (
+        <T style={{ color: C.muted, fontSize: 12 }}>Yükleniyor…</T>
+      ) : rewardsQ.isError ? (
+        <View style={{ gap: 10 }}>
+          <T style={{ color: C.error, fontSize: 12 }}>{errorMessage(rewardsQ.error)}</T>
+          <GradBtn label="Tekrar dene" small onPress={() => rewardsQ.refetch()} />
+        </View>
+      ) : items.length === 0 ? (
+        <T style={{ color: C.muted, fontSize: 12 }}>Şu an ödül yok.</T>
+      ) : (
+        <View style={{ gap: 10 }}>
+          {items.map((r) => {
+            const can = r.available && p.credits >= r.cost && !elig?.eligibleAtUtc;
+            return (
+              <View
+                key={r.id}
+                style={[
+                  {
+                    borderRadius: 18,
+                    minHeight: 88,
+                    padding: 13,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    backgroundColor: "#fff",
+                    borderWidth: 1,
+                    borderColor: C.mist,
+                    opacity: r.available ? 1 : 0.6,
+                  },
+                  SH.soft,
+                ]}
+              >
+                <LinearGradient
+                  colors={[C.tide, C.lagoon]}
+                  {...DIAG}
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 16,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Gem size={22} color="#fff" />
+                </LinearGradient>
+                <View style={{ flex: 1 }}>
+                  <T f="bb" style={{ fontSize: 13, lineHeight: 17 }}>
+                    {r.title}
+                  </T>
+                  <T style={{ color: C.muted, fontSize: 10, marginTop: 5 }}>
+                    {r.provider}
+                    {stockText(r)}
+                    {r.redeemedByMe > 0 ? ` · ${r.redeemedByMe}/${r.perUserLimit} aldın` : ""}
+                  </T>
+                  {!r.available && (
+                    <T style={{ color: C.coral, fontSize: 10, marginTop: 3 }}>
+                      {r.stockRemaining === 0 ? "Stok tükendi" : "Limitin doldu"}
+                    </T>
+                  )}
+                </View>
+                <GradBtn
+                  label={`${r.cost} ✦`}
+                  small
+                  disabled={!can}
+                  radius={{ borderRadius: 999 }}
+                  onPress={() => can && setSelected(r)}
+                />
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      <SectionTitle title="Aldığım ödüller" />
+      {redemptionsQ.isLoading ? (
+        <T style={{ color: C.muted, fontSize: 12 }}>Yükleniyor…</T>
+      ) : mine.length === 0 ? (
+        <T style={{ color: C.muted, fontSize: 12 }}>Henüz ödül almadın.</T>
+      ) : (
+        <View style={{ gap: 8 }}>
+          {mine.map((m) => (
             <View
-              key={r.id}
+              key={m.id}
               style={[
-                r.featured ? fin : { borderRadius: 18 },
-                {
-                  minHeight: r.featured ? 114 : 88,
-                  padding: 13,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 12,
-                  backgroundColor: r.featured ? "#F1F7FF" : "#fff",
-                  borderWidth: 1,
-                  borderColor: r.featured ? "#B9D7FF" : C.mist,
-                },
+                { padding: 13, borderRadius: 15, backgroundColor: "#fff", gap: 4 },
                 SH.soft,
               ]}
             >
-              <LinearGradient
-                colors={[r.featured ? C.coral : C.tide, C.lagoon]}
-                {...DIAG}
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 16,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {rewardIcon(r.icon)}
-              </LinearGradient>
-              <View style={{ flex: 1 }}>
-                {r.featured && (
-                  <T
-                    f="bb"
-                    style={{ color: C.coral, fontSize: 9, letterSpacing: 0.8 }}
-                  >
-                    ÖNE ÇIKAN
-                  </T>
-                )}
-                <T f="bb" style={{ fontSize: 13, lineHeight: 17 }}>
-                  {r.name}
+              <T f="bb" style={{ fontSize: 12 }}>
+                {m.title}
+              </T>
+              <T style={{ color: C.muted, fontSize: 10 }}>
+                {m.provider} · {formatDateTime(m.createdAtUtc)}
+              </T>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 4 }}>
+                <T f="h" selectable style={{ fontSize: 15, letterSpacing: 1.5, color: C.tide, flex: 1 }}>
+                  {m.code}
                 </T>
-                <T style={{ color: C.muted, fontSize: 10, marginTop: 5 }}>
-                  {r.source}
-                </T>
+                <Chip
+                  onPress={async () => {
+                    await Clipboard.setStringAsync(m.code);
+                    p.showToast("Kod kopyalandı");
+                  }}
+                >
+                  Kopyala
+                </Chip>
               </View>
-              <GradBtn
-                label={`${r.price} ✦`}
-                small
-                disabled={!can}
-                radius={{ borderRadius: 999 }}
-                onPress={() => can && p.onRedeem(r)}
-              />
             </View>
-          );
-        })}
-      </View>
+          ))}
+          {redemptionsQ.hasNextPage && (
+            <Chip onPress={() => redemptionsQ.fetchNextPage()}>
+              {redemptionsQ.isFetchingNextPage ? "Yükleniyor…" : "Daha fazla göster"}
+            </Chip>
+          )}
+        </View>
+      )}
       <T
         style={{
           textAlign: "center",
@@ -171,8 +219,18 @@ export function RewardsScreen(p: RewardsScreenProps) {
           marginHorizontal: 12,
         }}
       >
-        Ödüller bu prototipte örnektir, gerçek bir teslimat yoktur.
+        Ödüller kupon kodu üretir; teslimat bu kodla yapılır.
       </T>
+
+      {selected && (
+        <RedeemSheet
+          reward={selected}
+          credits={p.credits}
+          toast={p.toast}
+          onClose={() => setSelected(null)}
+          showToast={p.showToast}
+        />
+      )}
     </ScrollView>
   );
 }
