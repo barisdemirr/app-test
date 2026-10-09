@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using Dersakis.Features.Live;
 using Dersakis.Infrastructure.Database;
 using Dersakis.Infrastructure.Services;
 using Dersakis.Infrastructure.Services.Push;
@@ -104,6 +105,8 @@ builder.Services.AddSingleton(builder.Configuration.GetSection("Agora").Get<Agor
 builder.Services.AddSingleton((builder.Configuration.GetSection("Push").Get<PushSettings>() ?? new PushSettings()).EnsureValid());
 builder.Services.AddHttpClient<IPushSender, ExpoPushSender>(c => c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddHostedService<PushDispatchService>();
+
+builder.Services.AddHostedService<LiveLifecycleService>();
 
 
 var app = builder.Build();
