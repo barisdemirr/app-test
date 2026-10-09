@@ -65,11 +65,12 @@ builder.Services.AddHostedService<IdempotencyCleanupService>();
 
 builder.Services.AddSingleton((builder.Configuration.GetSection("Credits").Get<CreditSettings>() ?? new CreditSettings()).EnsureValid());
 
+builder.Services.AddScoped<CreditService>();
 
 var app = builder.Build();
 
 
-app.UseForwardedHeaders();      
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 if (app.Environment.IsDevelopment()) app.MapOpenApi();
 app.UseHttpsRedirection();
