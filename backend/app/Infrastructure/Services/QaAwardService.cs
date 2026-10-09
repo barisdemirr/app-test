@@ -34,7 +34,7 @@ public sealed class QaAwardService(AppDbContext db, CreditService credits, QaSet
                 .Where(a => a.Id == answerId && a.QuestionId == questionId).Select(a => (Guid?)a.AuthorId).FirstOrDefaultAsync(token);
             if (answererId is null) return Error.NotFound("answer_not_found", "Cevap bu soruya ait değil veya bulunamadı.");
 
-            return await AwardAsync(q, answerId.Value, answererId.Value, QaChosenBy.Asker, token);
+            return await AwardAsync(q, answerId, answererId.Value, QaChosenBy.Asker, token);
         }, ct);
 
     /// <summary>Süre dolduysa ve seçim yapılmadıysa ödül ilk cevaplayana verilir. Arka plan servisi çağırır.</summary>
