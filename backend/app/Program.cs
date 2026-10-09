@@ -61,6 +61,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(o =>
         o.KnownProxies.Add(IPAddress.Parse(ip));
 });
 
+builder.Services.AddHostedService<IdempotencyCleanupService>();
+
 
 
 var app = builder.Build();
