@@ -19,6 +19,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<PhoneVerification> PhoneVerifications => Set<PhoneVerification>();
     public DbSet<Reward> Rewards => Set<Reward>();
     public DbSet<RewardRedemption> RewardRedemptions => Set<RewardRedemption>();
+    public DbSet<VideoMark> VideoMarks => Set<VideoMark>();
+    public DbSet<UserCourse> UserCourses => Set<UserCourse>();
+    public DbSet<UserInterest> UserInterests => Set<UserInterest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

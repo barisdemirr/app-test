@@ -6,6 +6,10 @@ public sealed class User : BaseEntity
     public required string DisplayName { get; set; }
     public required string PasswordHash { get; set; }
 
+    public string About { get; set; } = "";
+    public string? AvatarPath { get; set; }               // AvatarStorage'a göre göreli yol
+    public DateTime? AvatarUpdatedAtUtc { get; set; }     // avatar adresindeki ?v= değeri (önbellek kırma)
+
     /// <summary>
     /// Bakiye SADECE kredi servisi üzerinden, atomik SQL ile değişir.
     /// private set: kod içinden "user.CreditBalance += x" yazılması derleme aşamasında engellenir.

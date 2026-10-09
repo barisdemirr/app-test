@@ -23,6 +23,9 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         b.Property(x => x.Phone).HasMaxLength(13).IsUnicode(false).IsRequired();
         b.Property(x => x.DisplayName).HasMaxLength(40).IsRequired();
         b.Property(x => x.PasswordHash).HasMaxLength(256).IsRequired();
+        b.Property(x => x.About).HasMaxLength(500).IsRequired().HasDefaultValue("");
+        b.Property(x => x.AvatarPath).HasMaxLength(100).IsUnicode(false);
+        b.Property(x => x.AvatarUpdatedAtUtc).HasColumnType("datetime2(3)");
         b.Property(x => x.InviteCode).HasMaxLength(8).IsUnicode(false).IsFixedLength()
             .UseCollation("Latin1_General_100_BIN2").IsRequired();
 
