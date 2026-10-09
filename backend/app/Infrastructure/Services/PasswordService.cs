@@ -7,10 +7,10 @@ public sealed class PasswordService
 {
     private static readonly User Placeholder = new()
     {
-        Email = "",
-        NormalizedEmail = "",
+        Phone = "",
         DisplayName = "",
-        PasswordHash = ""
+        PasswordHash = "",
+        InviteCode = ""
     };
 
     private readonly PasswordHasher<User> _hasher = new();

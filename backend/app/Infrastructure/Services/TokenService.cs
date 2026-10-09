@@ -23,7 +23,6 @@ public sealed class TokenService(JwtSettings settings, TimeProvider clock)
             Subject = new ClaimsIdentity(
             [
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
             ]),
             Issuer = settings.Issuer,

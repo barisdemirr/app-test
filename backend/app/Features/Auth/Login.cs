@@ -1,13 +1,13 @@
-using Dersakis.Domain.Entities;
 using Dersakis.Infrastructure.Database;
 using Dersakis.Infrastructure.Services;
 using Dersakis.Shared;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Dersakis.Features.Auth;
 
-public sealed record LoginRequest(string? Email, string? Password);
+public sealed record LoginRequest(string? Phone, string? Password);
 
 public sealed class Login : IEndpoint
 {
@@ -16,22 +16,20 @@ public sealed class Login : IEndpoint
 
     public void MapEndpoint(IEndpointRouteBuilder app)
         => app.MapPost("/auth/login", Handle).AllowAnonymous()
-        .RequireRateLimiting(RateLimitPolicies.Auth).WithTags("Auth");
+              .RequireRateLimiting(RateLimitPolicies.Auth).WithTags("Auth");
 
     private static async Task<IResult> Handle(
         LoginRequest req, AppDbContext db, PasswordService passwords, TokenService tokens,
         TimeProvider clock, CancellationToken ct)
     {
-        var email = (req.Email ?? "").Trim();
+        var phone = PhoneNumber.Normalize(req.Phone);
         var password = req.Password ?? "";
 
-        if (email.Length is 0 or > 254 || password.Length is 0 or > 128)
+        if (phone is null || password.Length is 0 or > 128)
             return Invalid();
 
-        var normalized = User.NormalizeEmail(email);
         var now = clock.GetUtcNow().UtcDateTime;
-
-        var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.NormalizedEmail == normalized, ct);
+        var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Phone == phone, ct);
 
         if (user?.LockoutEndUtc > now)
             return Result.Failure(Error.TooMany("account_locked",
@@ -62,12 +60,12 @@ public sealed class Login : IEndpoint
         }
 
         var (token, expires) = tokens.Create(user);
-        var dto = new UserDto(user.Id, user.Email, user.DisplayName, user.CreditBalance);
+        var dto = new UserDto(user.Id, user.Phone, user.DisplayName, user.CreditBalance, user.InviteCode);
         return Results.Ok(new AuthResponse(token, expires, dto));
     }
 
     /// <summary>
-    /// Tek atomik UPDATE: SQL Server'da SET içindeki tüm ifadeler satırın ESKİ değerlerine göre hesaplanır.
+    /// Tek atomik UPDATE: SET içindeki tüm ifadeler satırın ESKİ değerlerine göre hesaplanır.
     /// Eşzamanlı yanlış denemelerde sayaç kaybolmaz. CancellationToken.None: istemci bağlantıyı keserek
     /// sayacın yazılmasını engelleyemesin.
     /// </summary>
@@ -83,5 +81,5 @@ public sealed class Login : IEndpoint
     }
 
     private static IResult Invalid()
-        => Result.Failure(Error.Unauthorized("invalid_credentials", "E-posta veya şifre hatalı.")).ToProblem();
+        => Result.Failure(Error.Unauthorized("invalid_credentials", "Telefon numarası veya şifre hatalı.")).ToProblem();
 }

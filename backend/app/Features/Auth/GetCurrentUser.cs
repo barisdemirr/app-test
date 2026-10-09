@@ -16,10 +16,10 @@ public sealed class GetCurrentUser : IEndpoint
         if (userId is null)
             return Result.Failure(Error.Unauthorized("invalid_token", "Geçersiz oturum.")).ToProblem();
 
-        // Bakiye her zaman DB'den okunur, token içinde taşınmaz (token'daki değer eskiyebilir ve güvenilmez).
+        // Bakiye her zaman DB'den okunur, token içinde taşınmaz.
         var dto = await db.Users.AsNoTracking()
             .Where(u => u.Id == userId)
-            .Select(u => new UserDto(u.Id, u.Email, u.DisplayName, u.CreditBalance))
+            .Select(u => new UserDto(u.Id, u.Phone, u.DisplayName, u.CreditBalance, u.InviteCode))
             .FirstOrDefaultAsync(ct);
 
         return dto is null
