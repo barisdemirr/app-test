@@ -14,6 +14,10 @@ public sealed class User : BaseEntity
     /// </summary>
     public int CreditBalance { get; private set; }
 
+    /// <summary>Bugün (Türkiye saatiyle) tavana sayılan kazanım. DailyEarnedDay bugün değilse geçersizdir.</summary>
+    public int DailyEarned { get; private set; }
+    public DateOnly? DailyEarnedDay { get; private set; }
+
     public int FailedLoginCount { get; set; }
     public DateTime? LockoutEndUtc { get; set; }
 

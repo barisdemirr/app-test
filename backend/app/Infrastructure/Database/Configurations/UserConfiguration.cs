@@ -9,7 +9,11 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
     public void Configure(EntityTypeBuilder<User> b)
     {
         // Son savunma hattı: uygulama hata yapsa bile DB eksi bakiyeyi reddeder.
-        b.ToTable("Users", t => t.HasCheckConstraint("CK_Users_CreditBalance_NonNegative", "[CreditBalance] >= 0"));
+        b.ToTable("Users", t =>
+{
+    t.HasCheckConstraint("CK_Users_CreditBalance_NonNegative", "[CreditBalance] >= 0");
+    t.HasCheckConstraint("CK_Users_DailyEarned_NonNegative", "[DailyEarned] >= 0");
+});
 
         b.HasKey(x => x.Id);
         b.Property(x => x.Id).ValueGeneratedNever();
@@ -19,6 +23,8 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         b.Property(x => x.DisplayName).HasMaxLength(40).IsRequired();
         b.Property(x => x.PasswordHash).HasMaxLength(256).IsRequired();
         b.Property(x => x.CreditBalance).HasDefaultValue(0);
+        b.Property(x => x.DailyEarned).HasDefaultValue(0);
+        b.Property(x => x.DailyEarnedDay).HasColumnType("date");
         b.Property(x => x.CreatedAtUtc).HasColumnType("datetime2(3)");
         b.Property(x => x.LockoutEndUtc).HasColumnType("datetime2(3)");
 
