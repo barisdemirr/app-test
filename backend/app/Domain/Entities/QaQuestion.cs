@@ -20,6 +20,7 @@ public sealed class QaQuestion : BaseEntity
     public Guid? BestAnswerId { get; set; }              // bilerek FK yok: döngüsel bağımlılık, kod kilit altında yazar
     public DateTime? BestChosenAtUtc { get; set; }
     public QaChosenBy? BestChosenBy { get; set; }
+    public DateTime? RefundedAtUtc { get; set; }
 
     public long Seq { get; private set; }                // sequence'ten, liste sıralaması ve cursor için
 }

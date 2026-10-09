@@ -17,6 +17,9 @@ public sealed class QaQuestionConfiguration : IEntityTypeConfiguration<QaQuestio
             t.HasCheckConstraint("CK_QaQuestions_BestConsistent",
                 "([BestAnswerId] IS NULL AND [BestChosenAtUtc] IS NULL AND [BestChosenBy] IS NULL) OR " +
                 "([BestAnswerId] IS NOT NULL AND [BestChosenAtUtc] IS NOT NULL AND [BestChosenBy] IS NOT NULL)");
+            // İade edilen soruda cevap ve seçilmiş en iyi cevap olamaz.
+            t.HasCheckConstraint("CK_QaQuestions_RefundExclusive",
+                "[RefundedAtUtc] IS NULL OR ([BestAnswerId] IS NULL AND [AnswerCount] = 0)");
         });
 
         b.HasKey(x => x.Id);
@@ -43,6 +46,13 @@ public sealed class QaQuestionConfiguration : IEntityTypeConfiguration<QaQuestio
             .HasDatabaseName("IX_QaQuestions_PendingAward");
 
         b.HasIndex(x => new { x.AuthorId, x.Seq }).HasDatabaseName("IX_QaQuestions_AuthorId_Seq");
+
+        b.Property(x => x.RefundedAtUtc).HasColumnType("datetime2(3)");
+
+        // İade servisi yalnızca "yazılı, cevapsız, iade edilmemiş" sorulara bakar (Mode = 1: Text).
+        b.HasIndex(x => x.CreatedAtUtc)
+            .HasFilter("[AnswerCount] = 0 AND [RefundedAtUtc] IS NULL AND [Mode] = 1")
+            .HasDatabaseName("IX_QaQuestions_PendingRefund");
 
         b.HasOne<User>().WithMany().HasForeignKey(x => x.AuthorId).OnDelete(DeleteBehavior.Restrict);
     }

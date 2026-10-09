@@ -7,5 +7,6 @@ public enum CreditReason : byte
     QuizCorrect = 2,
     RewardRedeem = 3,
     QaQuestionSpend = 4,
-    QaBestAnswer = 5
+    QaBestAnswer = 5,
+    QaQuestionRefund = 6
 }
