@@ -92,6 +92,9 @@ builder.Services.AddScoped<QaAwardService>();
 
 builder.Services.AddHostedService<QaAutoAwardService>();
 
+builder.Services.AddScoped<QaRefundService>();
+
+
 var app = builder.Build();
 
 
