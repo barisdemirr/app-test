@@ -92,6 +92,9 @@ builder.Services.AddHostedService<QaAutoAwardService>();
 
 builder.Services.AddEndpoints(typeof(Program).Assembly);
 
+builder.Services.AddSingleton((builder.Configuration.GetSection("Rewards").Get<RewardSettings>() ?? new RewardSettings()).EnsureValid());
+
+
 var app = builder.Build();
 
 app.UseForwardedHeaders();
