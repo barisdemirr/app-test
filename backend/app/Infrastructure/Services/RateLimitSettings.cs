@@ -13,6 +13,7 @@ public sealed class RateLimitSettings
     public RateRule Heartbeat { get; init; } = new() { Permits = 30 };
     public RateRule Answer { get; init; } = new() { Permits = 30 };
     public RateRule Write { get; init; } = new() { Permits = 30 };
+    public RateRule Upload { get; init; } = new() { Permits = 10 };
 }
 
 public static class RateLimitPolicies
@@ -21,4 +22,5 @@ public static class RateLimitPolicies
     public const string Heartbeat = "heartbeat";
     public const string Answer = "answer";
     public const string Write = "write";
+    public const string Upload = "upload";
 }
