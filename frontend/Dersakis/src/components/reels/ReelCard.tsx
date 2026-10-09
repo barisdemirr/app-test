@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { Pressable, View } from "react-native";
+import { PanResponder, Pressable, StyleSheet, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   ArrowLeft,
@@ -41,12 +41,56 @@ export type ReelCardProps = {
   onReplay: () => void;
   onSeek: (p: number) => void;
   onBack: () => void;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
 };
 
 export function ReelCard(p: ReelCardProps) {
   const { reel, active, progress, finished } = p;
   const isFact = reel.course === FACT;
+
+  // refs
   const barW = useRef(1);
+  const lastX = useRef(0);
+  const finishedRef = useRef(finished);
+  const onSeekRef = useRef(p.onSeek);
+  const onDragStartRef = useRef(p.onDragStart);
+  const onDragEndRef = useRef(p.onDragEnd);
+
+  // her render'da güncel tut (stale closure önlemi)
+  finishedRef.current = finished;
+  onSeekRef.current = p.onSeek;
+  onDragStartRef.current = p.onDragStart;
+  onDragEndRef.current = p.onDragEnd;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => finishedRef.current,
+      onMoveShouldSetPanResponder: () => finishedRef.current,
+      onPanResponderGrant: (e) => {
+        if (!finishedRef.current) return;
+        onDragStartRef.current?.();
+        const x = Math.max(
+          0,
+          Math.min(1, e.nativeEvent.locationX / barW.current),
+        );
+        lastX.current = x;
+        onSeekRef.current(x);
+      },
+      onPanResponderMove: (_e, gesture) => {
+        if (!finishedRef.current) return;
+        const dx = gesture.dx / barW.current;
+        const next = Math.max(0, Math.min(1, lastX.current + dx));
+        onSeekRef.current(next);
+      },
+      onPanResponderRelease: () => {
+        onDragEndRef.current?.();
+      },
+      onPanResponderTerminate: () => {
+        onDragEndRef.current?.();
+      },
+    }),
+  ).current;
 
   const actions = [
     {
@@ -83,14 +127,19 @@ export function ReelCard(p: ReelCardProps) {
       <LinearGradient
         colors={[C.abyss, C.deep, "#164B83"]}
         {...DIAG}
-        style={{ ...require("react-native").StyleSheet.absoluteFillObject }}
+        style={StyleSheet.absoluteFill}
       />
       <GridBg />
 
-      <Pressable
-        style={require("react-native").StyleSheet.absoluteFillObject}
-        onPress={p.onTogglePlay}
-      />
+{/* 1. katman: oynat/duraklat için arka plan (tüm kart) */}
+<Pressable
+  style={StyleSheet.absoluteFill}
+  onPress={p.onTogglePlay}
+  pointerEvents={finished ? "none" : "auto"}
+/>
+
+{/* 2. katman: kilitliyken ekranın alt yarısına dokununca tetikle (opsiyonel) */}
+{/* veya finished=true iken kullanıcı oynatmak isterse "Tekrar oynat" zaten var */}
 
       {/* ders etiketi */}
       <View
@@ -165,8 +214,8 @@ export function ReelCard(p: ReelCardProps) {
 
       {/* duraklatıldı göstergesi */}
       {active && !p.playing && progress < 1 && (
-        <View
-          pointerEvents="none"
+        <Press
+          onPress={p.onTogglePlay} 
           style={{
             position: "absolute",
             left: 0,
@@ -187,7 +236,7 @@ export function ReelCard(p: ReelCardProps) {
           >
             <Play size={27} color="#fff" fill="#fff" />
           </View>
-        </View>
+        </Press>
       )}
 
       {/* sağ aksiyon barı */}
@@ -325,40 +374,85 @@ export function ReelCard(p: ReelCardProps) {
         )}
 
         {/* zaman çubuğu */}
-        <Pressable
-          disabled={!finished}
+        <View
+          {...(finished ? panResponder.panHandlers : {})}
           onLayout={(e) => {
             barW.current = e.nativeEvent.layout.width || 1;
           }}
-          onPress={(e) =>
-            p.onSeek(
-              Math.max(0, Math.min(1, e.nativeEvent.locationX / barW.current)),
-            )
-          }
-          style={{ height: 22, justifyContent: "center", marginTop: 8 }}
+          style={{
+            height: 30,
+            justifyContent: "center",
+            marginTop: 8,
+            opacity: finished ? 1 : 0.55,
+          }}
         >
+          {/* ray */}
           <View
             style={{
               height: 3,
               borderRadius: 8,
-              backgroundColor: "rgba(255,255,255,.23)",
+              backgroundColor: finished
+                ? "rgba(255,255,255,.23)"
+                : "rgba(255,255,255,.14)",
             }}
           >
+            {/* dolum */}
             <View
               style={{
                 width: `${(active ? progress : 0) * 100}%`,
                 height: 3,
                 borderRadius: 8,
-                backgroundColor: C.sun,
+                backgroundColor: finished ? C.sun : "#8B9BB4",
               }}
             />
           </View>
-        </Pressable>
-        <T style={{ fontSize: 9, color: "#C5D9EE", marginBottom: 8 }}>
+
+          {/* thumb */}
+          {finished && (
+            <View
+              pointerEvents="none"
+              style={{
+                position: "absolute",
+                left: `${Math.max(0, Math.min(1, active ? progress : 0)) * 100}%`,
+                width: 18,
+                height: 18,
+                borderRadius: 9,
+                backgroundColor: C.sun,
+                borderWidth: 2,
+                borderColor: "#fff",
+                marginLeft: -9,
+                shadowColor: "#000",
+                shadowOpacity: 0.25,
+                shadowRadius: 3,
+                shadowOffset: { width: 0, height: 1 },
+                elevation: 3,
+              }}
+            />
+          )}
+
+          {/* 🔒 kilitliyken ikon */}
+          {!finished && (
+            <View
+              pointerEvents="none"
+              style={{ position: "absolute", right: 0, top: -14 }}
+            >
+              <T style={{ fontSize: 9, color: "#8B9BB4" }}>🔒</T>
+            </View>
+          )}
+        </View>
+
+        <T
+          style={{
+            fontSize: 9,
+            color: finished ? "#C5D9EE" : "#8B9BB4",
+            marginBottom: 8,
+          }}
+        >
           {finished
-            ? "Çubuğa dokunarak istediğin yeri tekrar izle"
-            : "Zaman çubuğu ilk izlemeden sonra açılır"}
+            ? "Çubuğu sürükleyerek istediğin yere atla"
+            : "🔒 Zaman çubuğu ilk izlemeden sonra açılır"}
         </T>
+
         {!isFact && (
           <GradBtn
             label={

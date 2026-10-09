@@ -1,4 +1,4 @@
-import React, { RefObject } from "react";
+import React, { RefObject, useState } from "react";
 import {
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -34,6 +34,8 @@ export type FeedScreenProps = {
 };
 
 export function FeedScreen(p: FeedScreenProps) {
+  const [dragging, setDragging] = useState(false);   // 👈 yeni
+
   return (
     <View style={{ flex: 1, backgroundColor: C.abyss }}>
       <ScrollView
@@ -41,6 +43,7 @@ export function FeedScreen(p: FeedScreenProps) {
         pagingEnabled
         showsVerticalScrollIndicator={false}
         decelerationRate="fast"
+        scrollEnabled={!dragging}   // 👈 sürüklerken scroll kapalı
         onMomentumScrollEnd={p.onScrollEnd}
       >
         {p.reels.map((reel, idx) => (
@@ -65,6 +68,8 @@ export function FeedScreen(p: FeedScreenProps) {
             onReplay={() => p.onReplay(reel.id)}
             onSeek={p.onSeek}
             onBack={p.onBack}
+            onDragStart={() => setDragging(true)}   // 👈
+            onDragEnd={() => setDragging(false)}    // 👈
           />
         ))}
       </ScrollView>

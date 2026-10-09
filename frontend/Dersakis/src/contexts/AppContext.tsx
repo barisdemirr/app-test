@@ -261,23 +261,21 @@ export function AppProvider({
     showToast("+5 kredi");
   }, [earnedToday, dailyCap, showToast]);
 
-  const openFeed = useCallback(
-    (id?: string) => {
-      let idx = 0;
-      if (id) {
-        const i = visibleReels.findIndex((r) => r.id === id);
-        if (i >= 0) idx = i;
-      }
-      const target = visibleReels[idx];
-      const done = target ? finished.includes(target.id) : false;
-      setActiveIndex(idx);
-      setProgress(done ? 1 : 0);
-      setPlaying(!done);
-      setSheet("");
-      setScreen("feed");
-    },
-    [visibleReels, finished],
-  );
+const openFeed = useCallback(
+  (id?: string) => {
+    let idx = 0;
+    if (id) {
+      const i = visibleReels.findIndex((r) => r.id === id);
+      if (i >= 0) idx = i;
+    }
+    setActiveIndex(idx);
+    setProgress(0);        // her zaman baştan
+    setPlaying(true);      // her zaman oynat
+    setSheet("");
+    setScreen("feed");
+  },
+  [visibleReels],
+);
 
   const goTab = (s: Screen) => {
     setSheet("");
@@ -286,38 +284,31 @@ export function AppProvider({
   };
 
   // feed scroll
-  const onFeedScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const h = e.nativeEvent.layoutMeasurement.height || 1;
-    const i = Math.round(e.nativeEvent.contentOffset.y / h);
-    if (i !== safeIndex && visibleReels[i]) {
-      const done = finished.includes(visibleReels[i].id);
-      setActiveIndex(i);
-      setProgress(done ? 1 : 0);
-      setPlaying(!done);
-    }
-  };
+const onFeedScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const h = e.nativeEvent.layoutMeasurement.height || 1;
+  const i = Math.round(e.nativeEvent.contentOffset.y / h);
+  if (i !== safeIndex && visibleReels[i]) {
+    setActiveIndex(i);
+    setProgress(0);      // her zaman baştan
+    setPlaying(true);    // her zaman oynat
+  }
+};
 
   // reels timer
   const activeId = activeReel?.id;
   const activeFinished = activeId ? finished.includes(activeId) : false;
 
   useEffect(() => {
-    if (screen !== "feed" || !playing || !activeId || activeFinished) return;
-    const t = setInterval(
-      () => setProgress((p) => Math.min(1, p + 0.0086)),
-      120,
-    );
-    return () => clearInterval(t);
-  }, [screen, playing, activeId, activeFinished]);
-
-  useEffect(() => {
-    if (screen === "feed" && activeId && progress >= 1 && !activeFinished) {
+  if (screen === "feed" && activeId && progress >= 1) {
+    // sadece durdur, listeye ekleme (zaten var veya yeni eklendi)
+    if (!finished.includes(activeId)) {
       setFinished((f) => [...f, activeId]);
-      setPlaying(false);
     }
-  }, [screen, progress, activeId, activeFinished]);
+    setPlaying(false);
+  }
+}, [screen, progress, activeId, finished]);
 
-  const onTogglePlay = (idx: number) => {
+const onTogglePlay = (idx: number) => {
     if (idx !== safeIndex) return;
     if (progress >= 1) return;
     setPlaying((v) => !v);
@@ -334,11 +325,11 @@ export function AppProvider({
     );
   };
 
-  const onReplay = (id: string) => {
-    setFinished((f) => f.filter((x) => x !== id));
-    setProgress(0);
-    setPlaying(true);
-  };
+const onReplay = (id: string) => {
+  // 👈 setFinished'den ÇIKARMA — kilit açık kalsın
+  setProgress(0);
+  setPlaying(true);
+};
 
   const onSeek = (p: number) => {
     setProgress(p);
