@@ -14,7 +14,8 @@
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
         }
-      }
+      },
+      "bundleIdentifier": "com.dersakis.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -31,7 +32,8 @@
         "CAMERA",
         "MODIFY_AUDIO_SETTINGS",
         "BLUETOOTH"
-      ]
+      ],
+      "package": "com.dersakis.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -48,6 +50,7 @@
           }
         }
       ]
-    ]
+    ],
+    "scheme": "dersakis"
   }
 }
