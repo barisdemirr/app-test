@@ -1,23 +1,32 @@
+using Dersakis.Infrastructure.Database;
+using Dersakis.Infrastructure.Services;
+using Dersakis.Shared;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddSingleton(TimeProvider.System);
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("Default"), sql =>
+    {
+        sql.UseCompatibilityLevel(150); // SQL Server 2019
+        // 1205 = deadlock victim: EF isteği otomatik tekrar dener.
+        sql.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(4), errorNumbersToAdd: [1205]);
+    }));
+
+builder.Services.AddEndpoints(typeof(Program).Assembly);
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
+app.UseExceptionHandler();
+if (app.Environment.IsDevelopment()) app.MapOpenApi();
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
-
-app.MapControllers();
+var api = app.MapGroup("/api/v1");
+app.MapEndpoints(api);
 
 app.Run();

@@ -1,0 +1,108 @@
+# ========================================================
+# .NET 9 / ASP.NET Core Web API .gitignore
+# Konum: app/.gitignore
+# ========================================================
+
+# --- Derleme Çıktıları (Sizin Ekran Görüntülerinizdeki Sorun) ---
+# Bu klasörler asla commit edilmemelidir.
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+
+# --- Visual Studio / Rider / VS Code ---
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Rider özel
+*.sln.iml
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf/
+
+# --- NuGet ---
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# --- Yayınlama (Publish) ---
+publish/
+*.pubxml
+*.publishproj
+PublishScripts/
+
+# --- Veritabanı ve Loglar ---
+*.mdf
+*.ldf
+*.ndf
+*.db
+*.sqlite
+*.sqlite3
+*.log
+log.txt
+
+# --- Ortam Değişkenleri ve Sırlar (Çok Önemli) ---
+# appsettings.Development.json dosyasını ekran görüntüsünde gördüm.
+# Eğer içinde gerçek API keyleri veya connection stringler varsa bunu commit etmeyin.
+# Sadece template olarak kalsın isterseniz bu satırı açın:
+# appsettings.Development.json 
+# appsettings.*.json
+# !appsettings.json
+# !appsettings.Production.json
+
+# .env dosyaları
+.env
+.env.local
+.env.*.local
+
+# --- Test Sonuçları ---
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+coverage*.json
+coverage*.xml
+coverage*.info
+*.coverage
+*.coveragexml
+
+# --- Node.js (Eğer projenizde Frontend veya Tailwind gibi araçlar varsa) ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# --- İşletim Sistemi Dosyaları ---
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# --- Diğer ---
+*.tmp
+*.temp
+*.cache
+*.swp
+*~
+
+
+appsettings.Development.json
