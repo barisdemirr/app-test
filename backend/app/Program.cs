@@ -1,12 +1,12 @@
+using System.Net;
 using System.Text;
 using Dersakis.Infrastructure.Database;
 using Dersakis.Infrastructure.Services;
 using Dersakis.Shared;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Net;
-using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,12 +23,19 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         sql.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(4), errorNumbersToAdd: [1205]);
     }));
 
-// --- Auth ---
+// --- Ayarlar: hatalıysa uygulama hiç açılmaz ---
 var jwt = (builder.Configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings()).EnsureValid();
 builder.Services.AddSingleton(jwt);
+builder.Services.AddSingleton((builder.Configuration.GetSection("Credits").Get<CreditSettings>() ?? new CreditSettings()).EnsureValid());
+builder.Services.AddSingleton((builder.Configuration.GetSection("Videos").Get<VideoSettings>() ?? new VideoSettings()).EnsureValid());
+builder.Services.AddSingleton((builder.Configuration.GetSection("Watch").Get<WatchSettings>() ?? new WatchSettings()).EnsureValid());
+builder.Services.AddSingleton((builder.Configuration.GetSection("Qa").Get<QaSettings>() ?? new QaSettings()).EnsureValid());
+builder.Services.AddSingleton((builder.Configuration.GetSection("Otp").Get<OtpSettings>() ?? new OtpSettings()).EnsureValid());
+builder.Services.AddSingleton((builder.Configuration.GetSection("Referral").Get<ReferralSettings>() ?? new ReferralSettings()).EnsureValid());
+
+// --- Auth ---
 builder.Services.AddSingleton<TokenService>();
 builder.Services.AddSingleton<PasswordService>();
-
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
@@ -49,34 +56,14 @@ builder.Services
     });
 builder.Services.AddAuthorization();
 
-builder.Services.AddEndpoints(typeof(Program).Assembly);
-
-
+// --- Rate limit, proxy, CORS ---
 builder.Services.AddAppRateLimiting(builder.Configuration);
-
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
 {
     o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     foreach (var ip in builder.Configuration.GetSection("Proxy:KnownProxies").Get<string[]>() ?? [])
         o.KnownProxies.Add(IPAddress.Parse(ip));
 });
-
-builder.Services.AddHostedService<IdempotencyCleanupService>();
-
-builder.Services.AddSingleton((builder.Configuration.GetSection("Credits").Get<CreditSettings>() ?? new CreditSettings()).EnsureValid());
-
-builder.Services.AddScoped<CreditService>();
-
-builder.Services.AddSingleton((builder.Configuration.GetSection("Videos").Get<VideoSettings>() ?? new VideoSettings()).EnsureValid());
-builder.Services.AddSingleton<VideoStorage>();
-
-builder.Services.AddHostedService<VideoDraftCleanupService>();
-
-builder.Services.AddSingleton((builder.Configuration.GetSection("Watch").Get<WatchSettings>() ?? new WatchSettings()).EnsureValid());
-
-builder.Services.AddHostedService<WatchSessionCleanupService>();
-
-
 var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
 {
@@ -85,30 +72,27 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
          .WithExposedHeaders("Idempotent-Replayed", "Retry-After");
 }));
 
-
-builder.Services.AddSingleton((builder.Configuration.GetSection("Qa").Get<QaSettings>() ?? new QaSettings()).EnsureValid());
-
-builder.Services.AddScoped<QaAwardService>();
-
-builder.Services.AddHostedService<QaAutoAwardService>();
-
-builder.Services.AddScoped<QaRefundService>();
-
-
-builder.Services.AddSingleton((builder.Configuration.GetSection("Otp").Get<OtpSettings>() ?? new OtpSettings()).EnsureValid());
-builder.Services.AddSingleton((builder.Configuration.GetSection("Referral").Get<ReferralSettings>() ?? new ReferralSettings()).EnsureValid());
-
+// --- Servisler ---
 var smsProvider = builder.Configuration["Sms:Provider"] ?? "console";
 if (smsProvider != "console")
     throw new InvalidOperationException($"Sms:Provider '{smsProvider}' desteklenmiyor. Şimdilik yalnızca 'console'.");
 builder.Services.AddSingleton<ISmsSender, ConsoleSmsSender>();
-
+builder.Services.AddSingleton<VideoStorage>();
+builder.Services.AddScoped<CreditService>();
 builder.Services.AddScoped<OtpService>();
-builder.Services.AddHostedService<PhoneVerificationCleanupService>();
+builder.Services.AddScoped<QaAwardService>();
+builder.Services.AddScoped<QaRefundService>();
 
+// --- Arka plan servisleri ---
+builder.Services.AddHostedService<IdempotencyCleanupService>();
+builder.Services.AddHostedService<VideoDraftCleanupService>();
+builder.Services.AddHostedService<WatchSessionCleanupService>();
+builder.Services.AddHostedService<PhoneVerificationCleanupService>();
+builder.Services.AddHostedService<QaAutoAwardService>();
+
+builder.Services.AddEndpoints(typeof(Program).Assembly);
 
 var app = builder.Build();
-
 
 app.UseForwardedHeaders();
 app.UseExceptionHandler();
@@ -116,11 +100,9 @@ if (app.Environment.IsDevelopment()) app.MapOpenApi();
 app.UseHttpsRedirection();
 
 app.UseCors();
-
 app.UseAuthentication();
 app.UseRateLimiter();
 app.UseAuthorization();
-
 app.UseIdempotencyBuffering();
 
 var api = app.MapGroup("/api/v1");
