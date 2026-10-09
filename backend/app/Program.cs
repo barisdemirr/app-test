@@ -77,6 +77,16 @@ builder.Services.AddSingleton((builder.Configuration.GetSection("Watch").Get<Wat
 builder.Services.AddHostedService<WatchSessionCleanupService>();
 
 
+var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
+{
+    if (corsOrigins.Length > 0)
+        p.WithOrigins(corsOrigins).AllowAnyHeader().AllowAnyMethod()
+         .WithExposedHeaders("Idempotent-Replayed", "Retry-After");
+}));
+
+
+
 var app = builder.Build();
 
 
@@ -84,6 +94,8 @@ app.UseForwardedHeaders();
 app.UseExceptionHandler();
 if (app.Environment.IsDevelopment()) app.MapOpenApi();
 app.UseHttpsRedirection();
+
+app.UseCors();
 
 app.UseAuthentication();
 app.UseRateLimiter();
