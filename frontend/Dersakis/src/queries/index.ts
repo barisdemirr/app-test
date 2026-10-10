@@ -14,3 +14,4 @@ export * from "./useRewards";
 export * from "./useProfile";
 export * from "./useNotifications";
 export * from "./useLive";
+export * from "./useAi";

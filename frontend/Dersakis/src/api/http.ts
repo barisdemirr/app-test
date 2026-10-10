@@ -66,6 +66,8 @@ export type RequestOptions = {
   /** "(idem)" olan uçlar için zorunlu */
   idemKey?: string;
   signal?: AbortSignal;
+  /** Varsayılan 20 sn; yapay zekâ gibi yavaş uçlar için artırılır */
+  timeoutMs?: number;
 };
 
 /** Sorgu parametresi üretir; dizi değerler tekrarlanır (courseIds=A&courseIds=B), null/undefined atlanır. */
@@ -99,7 +101,7 @@ export async function api<T = any>(path: string, o: RequestOptions = {}): Promis
   const timer = setTimeout(() => {
     timedOut = true;
     ctrl.abort();
-  }, REQUEST_TIMEOUT_MS);
+  }, o.timeoutMs ?? REQUEST_TIMEOUT_MS);
   const onAbort = () => ctrl.abort();
   o.signal?.addEventListener("abort", onAbort);
 

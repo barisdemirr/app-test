@@ -31,6 +31,7 @@ import {
 } from "@/screens";
 import { ScreenFade, Toast } from "@/components/ui";
 import { JoinBanner } from "@/components/live";
+import { AiFab, AiChatSheet, type AiMessage } from "@/components/ai";
 import { useMascot } from "@/components/mascot";
 import { useMemo } from "react";
 import { flattenQa, useActiveSessions, useLiveList, useQaConfig, useQaQuestions, useUnreadCount } from "@/queries";
@@ -51,6 +52,9 @@ export function AppShell() {
   const { signOut, user } = useAuth();
   const qc = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  // Dolphy sohbeti: kapatıp açınca konuşma kaybolmasın diye burada tutulur
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiMessages, setAiMessages] = useState<AiMessage[]>([]);
 
   // Maskot Dolphy: giriş sonrası, ekran değişince (en çok 75 sn'de bir) ve kredi kazanınca ekrandan geçip kaçar
   const mascot = useMascot();
@@ -381,6 +385,18 @@ export function AppShell() {
           navHeight={NAV_H}
           navWrap={NAV_WRAP}
           onNavigate={a.goTab}
+        />
+      )}
+
+      {a.screen === "home" && a.sheet === "" && !aiOpen && (
+        <AiFab bottom={navTop + 78} onPress={() => setAiOpen(true)} />
+      )}
+
+      {aiOpen && (
+        <AiChatSheet
+          messages={aiMessages}
+          setMessages={setAiMessages}
+          onClose={() => setAiOpen(false)}
         />
       )}
 
