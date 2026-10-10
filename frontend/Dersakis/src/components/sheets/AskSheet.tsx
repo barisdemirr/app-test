@@ -4,6 +4,7 @@ import { Send } from "lucide-react-native";
 import { C, G_PRIMARY } from "@/theme";
 import { errorMessage } from "@/api/errors";
 import { useAskQuestion, useCourseNames, useQaConfig } from "@/queries";
+import { qaCategoriesFor, qaCategoryOfCourse } from "@/utils/qa";
 import { Chip, Field, GradBtn, Sheet, T } from "@/components/ui";
 
 export type AskSheetProps = {
@@ -11,6 +12,8 @@ export type AskSheetProps = {
   credits: number;
   /** Varsayılan kategori (seçili derslerden ilki) */
   defaultCategory: string;
+  /** Kullanıcının seçili dersleri: yalnızca bunlarla eşleşen kategoriler (+ Diğer) sunulur, soru listede görünür */
+  selectedCourses: string[];
   onClose: () => void;
   /** Soru sorulan ders seçili değilse seçime eklemek için */
   onAsked: (category: string) => void;
@@ -22,8 +25,11 @@ export function AskSheet(p: AskSheetProps) {
   const courseNames = useCourseNames();
   const ask = useAskQuestion();
 
-  const categories = config.data?.categories?.length ? config.data.categories : courseNames;
-  const [picked, setPicked] = useState(p.defaultCategory);
+  const all = config.data?.categories?.length ? config.data.categories : courseNames;
+  const categories = qaCategoriesFor(p.selectedCourses, all);
+  const [picked, setPicked] = useState(
+    qaCategoryOfCourse(p.defaultCategory, all) ?? "",
+  );
   const category = categories.includes(picked) ? picked : (categories[0] ?? "");
   const [topic, setTopic] = useState("");
   const [text, setText] = useState("");

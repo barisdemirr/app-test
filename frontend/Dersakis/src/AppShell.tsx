@@ -34,7 +34,8 @@ import { ScreenFade, Toast } from "@/components/ui";
 import { JoinBanner } from "@/components/live";
 import { useMascot } from "@/components/mascot";
 import { useMemo } from "react";
-import { flattenQa, useActiveSessions, useLiveList, useQaQuestions, useUnreadCount } from "@/queries";
+import { flattenQa, useActiveSessions, useLiveList, useQaConfig, useQaQuestions, useUnreadCount } from "@/queries";
+import { qaCategoriesFor } from "@/utils/qa";
 import { usePushRegistration } from "@/push";
 import type { LiveSessionDto } from "@/api/types";
 
@@ -123,7 +124,14 @@ export function AppShell() {
 
   // Bilene sor: kategori filtresi ve arama sunucuda yapılır (arama debounce'lu)
   const dSearch = useDebounced(a.searchText.trim(), 350);
-  const homeCats = a.courseFilter === "Tümü" ? a.selectedCourses : [a.courseFilter];
+  // Ders adları ≠ soru kategorileri: önce /qa/config kategorilerine eşle (yoksa liste sessizce boş kalırdı)
+  const qaCfg = useQaConfig();
+  const qaAllCats = qaCfg.data?.categories ?? [];
+  const homeCats =
+    a.courseFilter === "Tümü"
+      ? qaCategoriesFor(a.selectedCourses, qaAllCats)
+      : qaCategoriesFor([a.courseFilter], qaAllCats, false);
+  const listCats = qaCategoriesFor(a.selectedCourses, qaAllCats);
   const homeQ = useQaQuestions({
     categories: homeCats,
     search: dSearch,
@@ -132,7 +140,7 @@ export function AppShell() {
     refetchMs: 20_000,
   });
   const listQ = useQaQuestions({
-    categories: a.selectedCourses,
+    categories: listCats,
     search: dSearch,
     limit: 20,
     enabled: a.ready && a.screen === "list" && a.listType === "questions",
@@ -422,6 +430,7 @@ export function AppShell() {
         <AskSheet
           toast={a.toast}
           credits={a.credits}
+          selectedCourses={a.selectedCourses}
           defaultCategory={a.selectedCourses[0] ?? ""}
           onClose={() => a.setSheet("")}
           onAsked={a.selectCourseByName}
