@@ -38,7 +38,6 @@ export async function registerForPush(askPermission: boolean): Promise<string | 
     await Notifications.setNotificationChannelAsync("live", {
       name: "Canlı görüşmeler",
       importance: Notifications.AndroidImportance.MAX,
-      sound: "default",
       vibrationPattern: [0, 250, 250, 250],
     });
   }
