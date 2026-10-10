@@ -42,7 +42,7 @@ function Dash({ at, size, dir, onDone }: { at: number; size: number; dir: 1 | -1
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const r = (a: number[]) => p.interpolate({ inputRange: [0, 0.5, 0.56, 1], outputRange: a.map(String) });
+  const r = (a: number[]) => p.interpolate({ inputRange: [0, 0.5, 0.56, 1], outputRange: a });
   const rot = p.interpolate({
     inputRange: [0, 0.5, 0.56, 1],
     outputRange: dir === 1 ? ["-24deg", "0deg", "4deg", "20deg"] : ["24deg", "0deg", "-4deg", "-20deg"],
