@@ -3,7 +3,7 @@
  * (/qa/config: "Matematik", "Kimya", "Biyoloji", "Diğer") AYNI DEĞİLDİR. Soru listesi kategoriye göre
  * süzüldüğü için ders adını doğrudan göndermek soruları görünmez yapıyordu. Bu eşleme ikisini bağlar.
  */
-const norm = (s: string) =>
+export const normTr = (s: string) =>
   s
     .toLocaleLowerCase("tr")
     .replace(/ç/g, "c")
@@ -19,11 +19,11 @@ export const QA_OTHER = "Diğer";
 
 /** Bir dersin Bilene Sor kategorisi (yoksa null). Örn. "Genel Kimya" → "Kimya". */
 export function qaCategoryOfCourse(course: string, categories: string[]): string | null {
-  const c = norm(course);
+  const c = normTr(course);
   if (!c) return null;
   const hit = categories.find((k) => {
-    const n = norm(k);
-    return n && n !== norm(QA_OTHER) && (c.includes(n) || n.includes(c));
+    const n = normTr(k);
+    return n && n !== normTr(QA_OTHER) && (c.includes(n) || n.includes(c));
   });
   return hit ?? null;
 }
@@ -44,7 +44,7 @@ export function qaCategoriesFor(
     const k = qaCategoryOfCourse(course, categories);
     if (k && !out.includes(k)) out.push(k);
   }
-  const other = categories.find((k) => norm(k) === norm(QA_OTHER));
+  const other = categories.find((k) => normTr(k) === normTr(QA_OTHER));
   if (includeOther && other && !out.includes(other)) out.push(other);
   return out.length > 0 ? out : categories;
 }

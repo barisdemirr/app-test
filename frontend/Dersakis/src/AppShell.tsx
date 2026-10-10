@@ -12,7 +12,6 @@ import { BottomNav } from "@/components/navigation";
 import {
   AskSheet,
   FilterSheet,
-  OnboardingSheet,
   QuestionSheet,
   QuizSheet,
   NotificationsSheet,
@@ -456,12 +455,6 @@ export function AppShell() {
         />
       )}
 
-      {!a.onboarded && (
-        <OnboardingSheet
-          toast={a.toast}
-          onContinue={a.completeOnboarding}
-        />
-      )}
     </View>
   );
 }

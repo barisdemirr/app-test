@@ -8,6 +8,8 @@ import React, {
 } from "react";
 import type { Screen, SheetName } from "@/types";
 import { toggleIn } from "@/utils";
+import { normTr } from "@/utils/qa";
+import { takeWelcomePick } from "@/utils/welcome";
 import * as ImagePicker from "expo-image-picker";
 import type { AuthUser } from "@/api/auth";
 import type { Course } from "@/api/courses";
@@ -256,6 +258,28 @@ export function AppProvider({
   };
 
   const onboarded = ready && selectedCourseIds.length > 0;
+
+  // Karşılama akışındaki seçimler girişten sonra tercihe çevrilir (alt "ders seç" paneli kalktı).
+  // Seçim yoksa ya da hiçbiri sunucu dersiyle eşleşmezse tüm dersler açılır; Profil'den değiştirilir.
+  const autoApplied = useRef(false);
+  useEffect(() => {
+    if (!ready || onboarded || autoApplied.current || courses.length === 0) return;
+    autoApplied.current = true;
+    (async () => {
+      const pick = await takeWelcomePick();
+      let ids = pick?.keys.length
+        ? courses.filter((c) => pick.keys.some((k) => normTr(c.name).includes(k))).map((c) => c.id)
+        : [];
+      if (ids.length === 0) ids = courses.map((c) => c.id);
+      try {
+        await updatePrefs.mutateAsync({ courseIds: ids, interests });
+      } catch (e) {
+        autoApplied.current = false;
+        showToast(errorMessage(e));
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, onboarded, courses.length]);
 
   const openFeed = useCallback((source: FeedSource = { kind: "feed" }) => {
     setFeedSource(source);
