@@ -32,6 +32,7 @@ import {
 } from "@/screens";
 import { ScreenFade, Toast } from "@/components/ui";
 import { JoinBanner } from "@/components/live";
+import { useMascot } from "@/components/mascot";
 import { useMemo } from "react";
 import { flattenQa, useActiveSessions, useLiveList, useQaQuestions, useUnreadCount } from "@/queries";
 import { usePushRegistration } from "@/push";
@@ -50,6 +51,35 @@ export function AppShell() {
   const { signOut, user } = useAuth();
   const qc = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+
+  // Maskot Dolphy: giriş sonrası, ekran değişince (en çok 75 sn'de bir) ve kredi kazanınca ekrandan geçip kaçar
+  const mascot = useMascot();
+  const lastDash = useRef(0);
+  const prevCredits = useRef<number | null>(null);
+  const dashOnce = (at: number, gapMs: number) => {
+    const now = Date.now();
+    if (now - lastDash.current < gapMs) return;
+    lastDash.current = now;
+    mascot.dash({ at });
+  };
+  useEffect(() => {
+    if (!a.ready) return;
+    const t = setTimeout(() => dashOnce(0.28, 0), 1400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [a.ready]);
+  useEffect(() => {
+    if (a.screen === "home" || a.screen === "list" || a.screen === "rewards" || a.screen === "profile") {
+      const t = setTimeout(() => dashOnce(0.12 + Math.random() * 0.5, 75000), 700);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [a.screen]);
+  useEffect(() => {
+    if (prevCredits.current !== null && a.credits > prevCredits.current) dashOnce(0.2, 8000);
+    prevCredits.current = a.credits;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [a.credits]);
 
   // Android geri tuşu: uygulamadan çıkmak yerine bir önceki ekrana dön (sheet'leri Modal kapatır)
   const aRef = useRef(a);

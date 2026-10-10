@@ -1,34 +1,22 @@
 import React from "react";
-import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Path } from "react-native-svg";
-import { DIAG, G_PRIMARY } from "@/theme";
+import { View } from "react-native";
+import { Dolphin } from "@/components/mascot/Dolphin";
 
-/** Dersakış işareti: dalga çizgili gradyan kare. */
+/** Dolphora işareti: yuvarlak köşeli açık zemin üstünde yunus maskotu. */
 export function Logo({ size = 28 }: { size?: number }) {
   return (
-    <LinearGradient
-      colors={G_PRIMARY}
-      {...DIAG}
+    <View
       style={{
         width: size,
         height: size,
-        borderTopLeftRadius: size / 2,
-        borderTopRightRadius: size / 2,
-        borderBottomRightRadius: size / 2,
-        borderBottomLeftRadius: size * 0.18,
+        borderRadius: size * 0.34,
+        backgroundColor: "#E6F4FF",
         alignItems: "center",
         justifyContent: "center",
+        overflow: "hidden",
       }}
     >
-      <Svg width={size * 0.57} height={size * 0.36} viewBox="0 0 16 10">
-        <Path
-          d="M1 6 Q4 0 8 5 T15 4"
-          stroke="#fff"
-          strokeWidth={2}
-          fill="none"
-          strokeLinecap="round"
-        />
-      </Svg>
-    </LinearGradient>
+      <Dolphin size={size * 0.92} mood="smile" />
+    </View>
   );
 }

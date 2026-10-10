@@ -30,7 +30,7 @@ export function Header(p: HeaderProps) {
       <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
         <Logo size={28} />
         <T f="h" style={{ fontSize: 20, color: C.abyss, letterSpacing: -0.6 }}>
-          Dersakış
+          Dolphora
         </T>
       </View>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>

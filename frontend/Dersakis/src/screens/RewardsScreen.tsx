@@ -9,6 +9,7 @@ import type { RewardItem } from "@/api/rewards";
 import { useRedemptions, useRewards } from "@/queries";
 import { formatDateTime } from "@/utils/time";
 import { RedeemSheet } from "@/components/sheets";
+import { FloatingDolphin } from "@/components/mascot";
 import { Chip, GradBtn, SectionTitle, Sonar, Skeleton, T } from "@/components/ui";
 
 export type RewardsScreenProps = {
@@ -58,6 +59,9 @@ export function RewardsScreen(p: RewardsScreenProps) {
         >
           <Sonar size={120} />
         </View>
+        <View pointerEvents="none" style={{ position: "absolute", right: 8, top: 6 }}>
+          <FloatingDolphin size={84} mood="joy" />
+        </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           <LinearGradient
             colors={["#FFECA9", "#FFCA61"]}
@@ -75,7 +79,7 @@ export function RewardsScreen(p: RewardsScreenProps) {
             </T>
           </LinearGradient>
           <View>
-            <T style={{ fontSize: 11, color: "#BBD8F2" }}>DERSAKIŞ CÜZDANIN</T>
+            <T style={{ fontSize: 11, color: "#BBD8F2" }}>DOLPHORA CÜZDANIN</T>
             <T f="h" style={{ fontSize: 21, color: "#fff" }}>
               Bakiyen: {p.credits} kredi
             </T>

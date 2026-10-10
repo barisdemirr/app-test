@@ -4,11 +4,18 @@ import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C, DIAG, fin, SH } from "@/theme";
+import { FloatingDolphin, useMascot } from "@/components/mascot";
 import { Enter, Logo, Press, Sonar, T } from "@/components/ui";
 import { LoginForm } from "./LoginForm";
 import { RegisterForm } from "./RegisterForm";
 
 export function AuthScreen() {
+  const mascot = useMascot();
+  useEffect(() => {
+    const t = setTimeout(() => mascot.dash({ at: 0.55, size: 120 }), 900);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<"login" | "register">("login");
 
@@ -68,9 +75,12 @@ export function AuthScreen() {
           <View style={{ position: "absolute", right: 14, top: 14, opacity: 0.45 }}>
             <Sonar size={110} animated />
           </View>
+          <View style={{ position: "absolute", right: 10, bottom: 8 }}>
+            <FloatingDolphin size={112} mood="wink" />
+          </View>
           <Logo size={40} />
           <T f="h" style={{ fontSize: 28, color: "#fff", letterSpacing: -0.7, marginTop: 14 }}>
-            Dersakış
+            Dolphora
           </T>
           <T style={{ fontSize: 13, color: C.mist, marginTop: 6 }}>
             Bilgiyi yakala, kredi kazan.

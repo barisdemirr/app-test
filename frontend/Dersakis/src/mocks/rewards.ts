@@ -4,7 +4,7 @@ export const rewardsData: Reward[] = [
   {
     id: "w1",
     name: "Kalkülüs soru bankası (PDF)",
-    source: "Dersakış özel içeriği",
+    source: "Dolphora özel içeriği",
     price: 80,
     icon: "book",
   },
@@ -19,7 +19,7 @@ export const rewardsData: Reward[] = [
   {
     id: "w3",
     name: "Fizik 1 formül kitapçığı",
-    source: "Dersakış özel içeriği",
+    source: "Dolphora özel içeriği",
     price: 70,
     icon: "spark",
   },
@@ -47,7 +47,7 @@ export const rewardsData: Reward[] = [
   {
     id: "w7",
     name: "Reklamsız 1 hafta",
-    source: "Dersakış üyeliği",
+    source: "Dolphora üyeliği",
     price: 50,
     icon: "crown",
   },

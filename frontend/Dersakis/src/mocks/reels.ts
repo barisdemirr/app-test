@@ -112,7 +112,7 @@ export const initialReels: Reel[] = [
   {
     id: "r5",
     course: FACT,
-    creator: "Dersakış",
+    creator: "Dolphora",
     initials: "D",
     color: "#44BDD0",
     title: "Işık boşlukta saniyede yaklaşık 300.000 km yol alır.",

@@ -128,7 +128,7 @@ export function FeedScreen(p: FeedScreenProps) {
       );
     },
     onShare: (item: FeedItem) => {
-      Share.share({ message: `${item.title} — ${item.courseName} | Dersakış` }).catch(
+      Share.share({ message: `${item.title} — ${item.courseName} | Dolphora` }).catch(
         () => {},
       );
     },

@@ -3,7 +3,8 @@ import { View } from "react-native";
 import { WifiOff } from "lucide-react-native";
 import { C, G_PRIMARY } from "@/theme";
 import { API_ORIGIN } from "@/config";
-import { Enter, GradBtn, Logo, Press, Pulse, Ripple, T } from "@/components/ui";
+import { FloatingDolphin } from "@/components/mascot";
+import { Enter, GradBtn, Press, Ripple, T } from "@/components/ui";
 
 /** Açılışta token doğrulanırken (yükleniyor) ya da sunucuya ulaşılamadığında (yeniden dene). */
 export function BootScreen({
@@ -66,9 +67,7 @@ export function BootScreen({
           <View style={{ position: "absolute" }}>
             <Ripple size={120} color={C.tide} rings={2} />
           </View>
-          <Pulse to={1.1} duration={800}>
-            <Logo size={52} />
-          </Pulse>
+          <FloatingDolphin size={92} mood="joy" />
         </View>
       )}
     </View>

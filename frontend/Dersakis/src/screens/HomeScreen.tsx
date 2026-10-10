@@ -2,6 +2,7 @@ import React from "react";
 import { FlatList, RefreshControl, ScrollView, TextInput, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
+import { FloatingDolphin } from "@/components/mascot";
 import {
   ChevronDown,
   ChevronRight,
@@ -157,6 +158,9 @@ export function HomeScreen(p: HomeScreenProps) {
           style={{ position: "absolute", right: 20, top: 30, opacity: 0.45 }}
         >
           <Sonar size={120} animated />
+        </View>
+        <View pointerEvents="none" style={{ position: "absolute", right: 8, bottom: 6 }}>
+          <FloatingDolphin size={98} mood="smile" />
         </View>
         <View
           style={{

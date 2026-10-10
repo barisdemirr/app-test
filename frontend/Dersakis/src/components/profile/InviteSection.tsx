@@ -12,7 +12,7 @@ export function InviteSection() {
 
   const share = () =>
     Share.share({
-      message: `Dersakış'ta ders çalış, kredi kazan! Davet kodum: ${r.inviteCode}`,
+      message: `Dolphora'da ders çalış, kredi kazan! Davet kodum: ${r.inviteCode}`,
     }).catch(() => {});
 
   return (

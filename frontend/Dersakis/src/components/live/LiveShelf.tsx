@@ -1,3 +1,4 @@
+import { FloatingDolphin } from "@/components/mascot";
 import React from "react";
 import { FlatList, View } from "react-native";
 import { WifiOff } from "lucide-react-native";
@@ -86,7 +87,10 @@ export function LiveShelf({
             alignItems: "flex-start",
           }}
         >
-          <T style={{ color: C.muted, fontSize: 12.5 }}>{empty}</T>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <FloatingDolphin size={64} />
+            <T style={{ color: C.muted, fontSize: 12.5, flex: 1 }}>{empty}</T>
+          </View>
           {emptyAction}
         </View>
       ) : (

@@ -21,6 +21,7 @@ import { AuthProvider, useAuth } from "@/auth";
 import { queryClient, useAppFocus } from "@/queries";
 import { AuthScreen, BootScreen } from "@/screens/auth";
 import { AppShell } from "@/AppShell";
+import { MascotProvider } from "@/components/mascot";
 import { emptyQ } from "@/screens";
 
 function Root() {
@@ -60,7 +61,9 @@ export default function App() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <Root />
+          <MascotProvider>
+            <Root />
+          </MascotProvider>
         </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

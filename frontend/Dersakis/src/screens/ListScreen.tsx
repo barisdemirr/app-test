@@ -1,4 +1,5 @@
 import React from "react";
+import { FloatingDolphin } from "@/components/mascot";
 import { RefreshControl, ScrollView, TextInput, View } from "react-native";
 import { ArrowLeft, Search } from "lucide-react-native";
 import { C, FONT, SH } from "@/theme";
@@ -195,7 +196,7 @@ export function ListScreen(p: ListScreenProps) {
             <View style={{ position: "absolute", top: -35, opacity: 0.5 }}>
               <Sonar size={120} color="rgba(27,107,255,.2)" />
             </View>
-            <Search size={27} color={C.tide} />
+            <FloatingDolphin size={110} mood="wink" />
             <T f="bb" style={{ marginTop: 14 }}>
               {p.searchText.trim() ? "Sonuç bulunamadı." : "Burada henüz bir şey yok."}
             </T>
