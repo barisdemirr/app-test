@@ -108,6 +108,12 @@ builder.Services.AddHostedService<PushDispatchService>();
 
 builder.Services.AddHostedService<LiveLifecycleService>();
 
+// --- Dolphy (Gemini): anahtar yalnızca sunucuda (user-secrets / ortam değişkeni), istemciye asla gitmez ---
+var aiSettings = (builder.Configuration.GetSection("Ai").Get<AiSettings>() ?? new AiSettings()).EnsureValid();
+builder.Services.AddSingleton(aiSettings);
+builder.Services.AddSingleton<AiUsageLimiter>();
+builder.Services.AddHttpClient<GeminiClient>(c => c.Timeout = TimeSpan.FromSeconds(aiSettings.TimeoutSeconds + 5));
+
 
 var app = builder.Build();
 
