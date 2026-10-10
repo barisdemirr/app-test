@@ -1,8 +1,13 @@
+using System.Text.Json.Serialization;
+
 namespace Dersakis.Domain.Enums;
 
+/// <summary>API'de metin olarak ("Voice", "Lesson") gider; DB'de sayı kalır.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum LiveKind : byte { Voice = 1, Lesson = 2 }
 
 /// <summary>DB'de tinyint. Mevcut numaralar değişmez, sadece eklenir. Pending/Waiting/Live "aktif" sayılır.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum LiveStatus : byte
 {
     Listed = 1,            // eğitim ilanı, henüz satın alınmadı
@@ -17,6 +22,7 @@ public enum LiveStatus : byte
     Expired = 10           // süresi doldu (ilan, kimse katılmadı)
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum LiveOutcome : byte
 {
     None = 0, Approved = 1, AutoApproved = 2, Rejected = 3,

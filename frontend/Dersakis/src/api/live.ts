@@ -1,10 +1,58 @@
-import { api, qs } from "./http";
+import { api as rawApi, qs, type RequestOptions } from "./http";
 import type {
   AgoraDto,
   LiveKind,
+  LiveOutcome,
   LiveSessionDto,
+  LiveStatus,
   PagedList,
 } from "./types";
+
+const KIND_BY_NUM: Record<number, LiveKind> = { 1: "Voice", 2: "Lesson" };
+const STATUS_BY_NUM: Record<number, LiveStatus> = {
+  1: "Listed",
+  2: "Open",
+  3: "Booked",
+  4: "Pending",
+  5: "Waiting",
+  6: "Live",
+  7: "AwaitingApproval",
+  8: "Completed",
+  9: "Cancelled",
+  10: "Expired",
+};
+const OUTCOME_BY_NUM: Record<number, LiveOutcome> = {
+  0: "None",
+  1: "Approved",
+  2: "AutoApproved",
+  3: "Rejected",
+  4: "HostNoShow",
+  5: "GuestNoShow",
+  6: "BothNoShow",
+  7: "NoGuest",
+};
+
+/**
+ * Sunucu enum'ları bazı sürümlerde sayı (1, 2…) olarak gönderir; arayüz "Lesson", "Booked" gibi metin bekler.
+ * Yanıttaki tüm oturum nesnelerini (liste, {session}, tekil) metne çevirir. Zaten metinse dokunmaz.
+ */
+function fixLive<T>(v: T): T {
+  if (Array.isArray(v)) return v.map(fixLive) as unknown as T;
+  if (v && typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    if ("channelName" in o && "kind" in o) {
+      if (typeof o.kind === "number") o.kind = KIND_BY_NUM[o.kind] ?? o.kind;
+      if (typeof o.status === "number") o.status = STATUS_BY_NUM[o.status] ?? o.status;
+      if (typeof o.outcome === "number") o.outcome = OUTCOME_BY_NUM[o.outcome] ?? o.outcome;
+      return v;
+    }
+    for (const k of Object.keys(o)) o[k] = fixLive(o[k]);
+  }
+  return v;
+}
+
+const api = async <T = any>(path: string, o?: RequestOptions): Promise<T> => fixLive(await rawApi<T>(path, o));
+
 
 export type LiveScope = "open" | "mine" | "active";
 
