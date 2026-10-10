@@ -222,7 +222,7 @@ export function AiChatSheet({
                     </LinearGradient>
                   </View>
                 ) : (
-                  <View key={m.id} style={{ flexDirection: "row", gap: 8, alignItems: "flex-end", maxWidth: "94%" }}>
+                  <View key={m.id} style={{ flexDirection: "row", gap: 8, alignItems: "flex-end", maxWidth: "96%" }}>
                     <View style={{ width: 30, alignItems: "center" }}>
                       <Dolphin size={30} mood="smile" />
                     </View>
@@ -242,7 +242,7 @@ export function AiChatSheet({
                       {m.error ? (
                         <T f="bm" style={{ color: C.error, fontSize: 14, lineHeight: 20 }}>{m.text}</T>
                       ) : (
-                        <AiMessageBody text={m.text} res={m.res} />
+                        <AiMessageBody text={m.text} res={m.res} busy={busy} onAsk={send} />
                       )}
                     </View>
                   </View>
