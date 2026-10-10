@@ -1,5 +1,5 @@
-import React from "react";
-import { StyleSheet, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Animated, StyleSheet, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   Gem,
@@ -10,7 +10,7 @@ import {
 } from "lucide-react-native";
 import { C, DIAG, shadow } from "@/theme";
 import type { Screen } from "@/types";
-import { Press, T } from "@/components/ui";
+import { Pulse, Press, T } from "@/components/ui";
 
 export type BottomNavProps = {
   screen: Screen;
@@ -19,6 +19,59 @@ export type BottomNavProps = {
   navWrap: number;
   onNavigate: (s: Screen) => void;
 };
+
+function NavItem({
+  on,
+  label,
+  icon,
+  height,
+  onPress,
+}: {
+  on: boolean;
+  label: string;
+  icon: (c: string) => React.ReactNode;
+  height: number;
+  onPress: () => void;
+}) {
+  const v = useRef(new Animated.Value(on ? 1 : 0)).current;
+  useEffect(() => {
+    Animated.spring(v, { toValue: on ? 1 : 0, useNativeDriver: true, speed: 18, bounciness: 12 }).start();
+  }, [on, v]);
+  const col = on ? C.tide : "#8090A6";
+  return (
+    <Press
+      onPress={onPress}
+      scaleTo={0.9}
+      style={{ flex: 1, height, alignItems: "center", justifyContent: "center", gap: 3 }}
+    >
+      <Animated.View
+        style={{
+          transform: [
+            { translateY: v.interpolate({ inputRange: [0, 1], outputRange: [0, -2] }) },
+            { scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.14] }) },
+          ],
+        }}
+      >
+        {icon(col)}
+      </Animated.View>
+      <T f={on ? "bb" : "bm"} style={{ fontSize: 10, color: col }}>
+        {label}
+      </T>
+      <Animated.View
+        style={{
+          position: "absolute",
+          bottom: 3,
+          width: 15,
+          height: 3,
+          borderRadius: 9,
+          backgroundColor: C.tide,
+          opacity: v,
+          transform: [{ scaleX: v }],
+        }}
+      />
+    </Press>
+  );
+}
 
 export function BottomNav(p: BottomNavProps) {
   const currentTab: Screen = p.screen === "list" || p.screen === "live" ? "home" : p.screen;
@@ -50,40 +103,16 @@ export function BottomNav(p: BottomNavProps) {
     },
   ];
 
-  const navBtn = (it: (typeof navItems)[number]) => {
-    const on = currentTab === it.id;
-    const col = on ? C.tide : "#8090A6";
-    return (
-      <Press
-        key={it.id}
-        onPress={() => p.onNavigate(it.id)}
-        style={{
-          flex: 1,
-          height: p.navHeight,
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 3,
-        }}
-      >
-        {it.icon(col)}
-        <T f={on ? "bb" : "bm"} style={{ fontSize: 10, color: col }}>
-          {it.label}
-        </T>
-        {on && (
-          <View
-            style={{
-              position: "absolute",
-              bottom: 3,
-              width: 15,
-              height: 3,
-              borderRadius: 9,
-              backgroundColor: C.tide,
-            }}
-          />
-        )}
-      </Press>
-    );
-  };
+  const navBtn = (it: (typeof navItems)[number]) => (
+    <NavItem
+      key={it.id}
+      on={currentTab === it.id}
+      label={it.label}
+      icon={it.icon}
+      height={p.navHeight}
+      onPress={() => p.onNavigate(it.id)}
+    />
+  );
 
   return (
     <View
@@ -97,6 +126,20 @@ export function BottomNav(p: BottomNavProps) {
       }}
       pointerEvents="box-none"
     >
+      {p.screen !== "feed" && (
+        <LinearGradient
+          pointerEvents="none"
+          colors={["rgba(242,248,255,0)", "rgba(242,248,255,.96)", C.foam]}
+          locations={[0, 0.55, 1]}
+          style={{
+            position: "absolute",
+            left: -16,
+            right: -16,
+            bottom: -p.navBottom,
+            height: p.navWrap + p.navBottom + 14,
+          }}
+        />
+      )}
       <View
         style={[
           {
@@ -106,7 +149,7 @@ export function BottomNav(p: BottomNavProps) {
             bottom: 0,
             height: p.navHeight,
             borderRadius: 24,
-            backgroundColor: "rgba(255,255,255,.97)",
+            backgroundColor: "#FFFFFF",
             borderWidth: 1,
             borderColor: "rgba(220,234,247,.8)",
           },
@@ -141,18 +184,21 @@ export function BottomNav(p: BottomNavProps) {
         }}
         pointerEvents="box-none"
       >
-        <View
+        <Pulse
+          to={1.12}
+          duration={1400}
           style={{
             position: "absolute",
             top: -8,
             width: 72,
             height: 72,
             borderRadius: 36,
-            borderWidth: 1,
-            borderColor: "rgba(255,122,92,.22)",
+            borderWidth: 1.5,
+            borderColor: "rgba(255,122,92,.3)",
           }}
-          pointerEvents="none"
-        />
+        >
+          <View style={{ width: 69, height: 69 }} pointerEvents="none" />
+        </Pulse>
         <Press
           onPress={() => p.onNavigate("new")}
           style={[

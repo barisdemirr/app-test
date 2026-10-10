@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { BackHandler, View } from "react-native";
+import { BackHandler, Vibration, View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -30,10 +30,16 @@ import {
   ProfileScreen,
   RewardsScreen,
 } from "@/screens";
-import { Toast } from "@/components/ui";
+import { ScreenFade, Toast } from "@/components/ui";
+import { JoinBanner } from "@/components/live";
 import { useMemo } from "react";
-import { flattenQa, useLiveList, useQaQuestions, useUnreadCount } from "@/queries";
+import { flattenQa, useActiveSessions, useLiveList, useQaQuestions, useUnreadCount } from "@/queries";
 import { usePushRegistration } from "@/push";
+import type { LiveSessionDto } from "@/api/types";
+
+const flatLiveOf = (q: { data?: { pages: { items: LiveSessionDto[] }[] } }) =>
+  q.data?.pages.flatMap((pg) => pg.items) ?? [];
+const flatLive = flatLiveOf;
 
 const NAV_H = 67;
 const NAV_WRAP = 83;
@@ -93,12 +99,14 @@ export function AppShell() {
     search: dSearch,
     limit: 10,
     enabled: a.ready && a.screen === "home",
+    refetchMs: 20_000,
   });
   const listQ = useQaQuestions({
     categories: a.selectedCourses,
     search: dSearch,
     limit: 20,
     enabled: a.ready && a.screen === "list" && a.listType === "questions",
+    refetchMs: 15_000,
   });
 
   // Canlı oturumlar: ders filtresini biz ekleriz (rapor: courseIds'i her liste isteğine ekle)
@@ -108,17 +116,35 @@ export function AppShell() {
       ? a.selectedCourseIds
       : [courseIdOf(a.courseFilter)].filter((x): x is string => !!x);
   const onHome = a.ready && a.screen === "home";
-  const voiceQ = useLiveList({ kind: "Voice", scope: "open", courseIds: liveCourseIds, pageSize: 10, enabled: onHome });
-  const lessonQ = useLiveList({ kind: "Lesson", scope: "open", courseIds: liveCourseIds, pageSize: 10, enabled: onHome });
-  const activeQ = useLiveList({ scope: "active", pageSize: 10, enabled: onHome, refetchMs: 30_000 });
+  const voiceQ = useLiveList({ kind: "Voice", scope: "open", courseIds: liveCourseIds, pageSize: 10, enabled: onHome, refetchMs: 12_000 });
+  const lessonQ = useLiveList({ kind: "Lesson", scope: "open", courseIds: liveCourseIds, pageSize: 10, enabled: onHome, refetchMs: 12_000 });
+  // Yapılacak oturumlar uygulama genelinde izlenir: Katıl uyarısı her ekranda çıksın (aşağıda JoinBanner)
+  const activeQ = useActiveSessions(a.ready);
+
+  // Yeni bir oturum katılmaya hazır olunca titreşim: kullanıcı telefona bakmıyor olabilir
+  const joinableSeen = useRef<Set<string> | null>(null);
+  const activeItems = flatLiveOf(activeQ);
+  const joinableKey = activeItems
+    .filter((x) => x.canJoin && x.myRole !== "none")
+    .map((x) => x.id)
+    .sort()
+    .join(",");
+  useEffect(() => {
+    const ids = joinableKey ? joinableKey.split(",") : [];
+    const seen = joinableSeen.current;
+    if (seen && ids.some((id) => !seen.has(id))) Vibration.vibrate([0, 160, 90, 160]);
+    joinableSeen.current = new Set(ids);
+  }, [joinableKey]);
+
   const listKind = a.listType === "lessons" ? "Lesson" : a.listType === "voice" ? "Voice" : undefined;
   const listLiveQ = useLiveList({
     kind: listKind,
     scope: a.listType === "mine" ? "mine" : "open",
     courseIds: a.listType === "mine" ? undefined : a.selectedCourseIds,
     enabled: a.ready && a.screen === "list" && a.listType !== "questions",
+    refetchMs: a.listType === "mine" ? 6_000 : 10_000,
   });
-  const flatLive = (q: typeof voiceQ) => q.data?.pages.flatMap((pg) => pg.items) ?? [];
+
   const lk = a.searchText.trim().toLowerCase();
   const matches = (x: { title: string; courseName: string; host: { displayName: string } }) =>
     !lk || `${x.title} ${x.courseName} ${x.host.displayName}`.toLowerCase().includes(lk);
@@ -150,6 +176,7 @@ export function AppShell() {
       )}
 
       <View style={{ flex: 1 }}>
+        <ScreenFade key={a.screen}>
         {a.screen === "home" && (
           <HomeScreen
             credits={a.credits}
@@ -169,6 +196,7 @@ export function AppShell() {
             refreshing={refreshing}
             onRefresh={refreshHome}
             onOpenSession={a.openSession}
+            onJoinSession={(x) => a.openCall(x.id)}
             onCreateVoice={() => a.setSheet("voiceCreate")}
             onCreateLesson={() => a.setSheet("lessonCreate")}
             filteredQuestions={flattenQa(homeQ.data)}
@@ -284,6 +312,7 @@ export function AppShell() {
             loadingMoreLive={listLiveQ.isFetchingNextPage}
             onLoadMoreLive={() => listLiveQ.fetchNextPage()}
             onOpenSession={a.openSession}
+            onJoinSession={(x) => a.openCall(x.id)}
             listQuestions={flattenQa(listQ.data)}
             questionsLoading={listQ.isLoading}
             hasMoreQuestions={!!listQ.hasNextPage}
@@ -294,7 +323,19 @@ export function AppShell() {
             onOpenQuestion={(q) => a.openQuestion(q.id)}
           />
         )}
+        </ScreenFade>
       </View>
+
+      {a.screen !== "call" && (
+        <JoinBanner
+          items={flatLive(activeQ)}
+          hideForId={a.screen === "live" ? a.liveSessionId : null}
+          hotOnly={a.screen === "feed"}
+          bottom={navTop + 6}
+          onJoin={(s) => a.openCall(s.id)}
+          onOpen={a.openSession}
+        />
+      )}
 
       {a.screen !== "call" && (
         <BottomNav

@@ -38,11 +38,14 @@ export function useQaQuestions(o: {
   status?: QaStatus;
   limit?: number;
   enabled?: boolean;
+  /** Ekran açıkken kendiliğinden yenileme aralığı (ms) */
+  refetchMs?: number;
 }) {
-  const { categories, search = "", status = "all", limit = 10, enabled = true } = o;
+  const { categories, search = "", status = "all", limit = 10, enabled = true, refetchMs } = o;
   return useInfiniteQuery({
     queryKey: queryKeys.qaList(categories, status, search, limit),
     enabled: enabled && categories.length > 0,
+    refetchInterval: refetchMs,
     initialPageParam: undefined as Cursor,
     queryFn: ({ pageParam }) =>
       fetchQaQuestions({ categories, status, search, limit, cursor: pageParam }),
@@ -67,6 +70,7 @@ export function useQaQuestion(id: string) {
     queryKey: queryKeys.qaDetail(id),
     queryFn: () => fetchQaQuestion(id),
     staleTime: 0,
+    refetchInterval: 8_000, // yeni cevaplar ve en iyi cevap seçimi kendiliğinden gelsin
   });
 }
 

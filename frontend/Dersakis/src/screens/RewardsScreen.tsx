@@ -9,7 +9,7 @@ import type { RewardItem } from "@/api/rewards";
 import { useRedemptions, useRewards } from "@/queries";
 import { formatDateTime } from "@/utils/time";
 import { RedeemSheet } from "@/components/sheets";
-import { Chip, GradBtn, SectionTitle, Sonar, T } from "@/components/ui";
+import { Chip, GradBtn, SectionTitle, Sonar, Skeleton, T } from "@/components/ui";
 
 export type RewardsScreenProps = {
   credits: number;
@@ -94,7 +94,7 @@ export function RewardsScreen(p: RewardsScreenProps) {
 
       <SectionTitle title="Senin için seçtik" />
       {rewardsQ.isLoading ? (
-        <T style={{ color: C.muted, fontSize: 12 }}>Yükleniyor…</T>
+        <View style={{ gap: 8 }}><Skeleton style={{ height: 52, borderRadius: 14 }} /><Skeleton style={{ height: 52, borderRadius: 14 }} /></View>
       ) : rewardsQ.isError ? (
         <View style={{ gap: 10 }}>
           <T style={{ color: C.error, fontSize: 12 }}>{errorMessage(rewardsQ.error)}</T>
@@ -168,7 +168,7 @@ export function RewardsScreen(p: RewardsScreenProps) {
 
       <SectionTitle title="Aldığım ödüller" />
       {redemptionsQ.isLoading ? (
-        <T style={{ color: C.muted, fontSize: 12 }}>Yükleniyor…</T>
+        <View style={{ gap: 8 }}><Skeleton style={{ height: 52, borderRadius: 14 }} /><Skeleton style={{ height: 52, borderRadius: 14 }} /></View>
       ) : mine.length === 0 ? (
         <T style={{ color: C.muted, fontSize: 12 }}>Henüz ödül almadın.</T>
       ) : (

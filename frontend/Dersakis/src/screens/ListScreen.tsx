@@ -1,11 +1,12 @@
 import React from "react";
-import { ScrollView, TextInput, View } from "react-native";
-import { ArrowLeft, PlayCircle, Search } from "lucide-react-native";
+import { RefreshControl, ScrollView, TextInput, View } from "react-native";
+import { ArrowLeft, Search } from "lucide-react-native";
 import { C, FONT, SH } from "@/theme";
 import type { LiveSessionDto } from "@/api/types";
 import { LiveCard } from "@/components/live";
 import type { QaQuestion } from "@/api/qa";
-import { Avatar, Press, Sonar, T } from "@/components/ui";
+import { Enter, LiveDot, Press, Skeleton, Sonar, T } from "@/components/ui";
+import { fin } from "@/theme";
 
 export type ListScreenProps = {
   topInset: number;
@@ -21,6 +22,7 @@ export type ListScreenProps = {
   loadingMoreLive: boolean;
   onLoadMoreLive: () => void;
   onOpenSession: (id: string) => void;
+  onJoinSession: (s: LiveSessionDto) => void;
   listQuestions: QaQuestion[];
   questionsLoading: boolean;
   hasMoreQuestions: boolean;
@@ -51,7 +53,10 @@ export function ListScreen(p: ListScreenProps) {
 
   return (
     <View style={{ flex: 1, paddingTop: p.topInset + 12 }}>
-      <ScrollView {...scrollProps}>
+      <ScrollView
+        {...scrollProps}
+        refreshControl={<RefreshControl refreshing={false} onRefresh={p.onRetry} tintColor={C.tide} />}
+      >
         <View
           style={{
             flexDirection: "row",
@@ -77,7 +82,7 @@ export function ListScreen(p: ListScreenProps) {
           >
             <ArrowLeft size={19} color={C.abyss} />
           </Press>
-          <T f="h" style={{ fontSize: 22 }}>
+          <T f="h" style={{ fontSize: 22, flex: 1 }} numberOfLines={1}>
             {p.listType === "lessons"
               ? "Tüm eğitimler"
               : p.listType === "voice"
@@ -86,6 +91,10 @@ export function ListScreen(p: ListScreenProps) {
                   ? "Oturumlarım"
                   : "Tüm sorular"}
           </T>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <LiveDot size={6} />
+            <T style={{ fontSize: 10.5, color: C.muted }}>Canlı</T>
+          </View>
         </View>
         <View style={{ marginBottom: 14, justifyContent: "center" }}>
           <View style={{ position: "absolute", left: 13, zIndex: 2 }}>
@@ -111,14 +120,14 @@ export function ListScreen(p: ListScreenProps) {
           />
         </View>
         {p.listType !== "questions"
-          ? p.liveItems.map((item) => (
-              <View key={item.id} style={{ marginBottom: 12 }}>
-                <LiveCard s={item} width="100%" onOpen={p.onOpenSession} />
-              </View>
+          ? p.liveItems.map((item, i) => (
+              <Enter key={item.id} delay={Math.min(i, 6) * 60} style={{ marginBottom: 12 }}>
+                <LiveCard s={item} width="100%" onOpen={p.onOpenSession} onJoin={p.onJoinSession} />
+              </Enter>
             ))
-          : p.listQuestions.map((item) => (
+          : p.listQuestions.map((item, i) => (
+              <Enter key={item.id} delay={Math.min(i, 8) * 45}>
               <Press
-                key={item.id}
                 onPress={() => p.onOpenQuestion(item)}
                 style={[
                   {
@@ -138,6 +147,7 @@ export function ListScreen(p: ListScreenProps) {
                   {item.hasBestAnswer ? " · ✓ çözüldü" : ""}
                 </T>
               </Press>
+              </Enter>
             ))}
         {p.listType !== "questions" && p.hasMoreLive && (
           <Press onPress={p.onLoadMoreLive} style={{ alignItems: "center", padding: 12 }}>
@@ -157,9 +167,16 @@ export function ListScreen(p: ListScreenProps) {
           </Press>
         )}
         {loading && (
-          <T style={{ color: C.muted, fontSize: 12, textAlign: "center", marginTop: 30 }}>
-            Yükleniyor…
-          </T>
+          <View style={{ gap: 12 }}>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={[fin, { backgroundColor: "#fff", padding: 15, gap: 11 }]}>
+                <Skeleton style={{ height: 70, borderRadius: 16 }} />
+                <Skeleton style={{ height: 16, width: "70%" }} />
+                <Skeleton style={{ height: 12 }} />
+                <Skeleton style={{ height: 40, borderRadius: 14 }} />
+              </View>
+            ))}
+          </View>
         )}
         {failed && (
           <View style={{ marginTop: 50, alignItems: "center", gap: 12 }}>

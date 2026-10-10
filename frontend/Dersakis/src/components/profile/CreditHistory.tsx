@@ -4,7 +4,7 @@ import { C, SH } from "@/theme";
 import { useCreditHistory } from "@/queries";
 import { creditReasonLabel } from "@/utils/creditReasons";
 import { formatDateTime } from "@/utils/time";
-import { Chip, SectionTitle, T } from "@/components/ui";
+import { Chip, SectionTitle, Skeleton, T } from "@/components/ui";
 
 /** Kredi hareketleri (sayfa sayfa). Negatif tutar = harcama. */
 export function CreditHistory() {
@@ -15,7 +15,7 @@ export function CreditHistory() {
     <>
       <SectionTitle title="Kredi geçmişi" />
       {q.isLoading ? (
-        <T style={{ color: C.muted, fontSize: 12 }}>Yükleniyor…</T>
+        <View style={{ gap: 8 }}><Skeleton style={{ height: 52, borderRadius: 14 }} /><Skeleton style={{ height: 52, borderRadius: 14 }} /></View>
       ) : items.length === 0 ? (
         <T style={{ color: C.muted, fontSize: 12 }}>Henüz kredi hareketin yok.</T>
       ) : (

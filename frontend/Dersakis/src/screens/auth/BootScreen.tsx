@@ -1,8 +1,9 @@
 import React from "react";
-import { ActivityIndicator, View } from "react-native";
+import { View } from "react-native";
+import { WifiOff } from "lucide-react-native";
 import { C, G_PRIMARY } from "@/theme";
 import { API_ORIGIN } from "@/config";
-import { GradBtn, Press, T } from "@/components/ui";
+import { Enter, GradBtn, Logo, Press, Pulse, Ripple, T } from "@/components/ui";
 
 /** Açılışta token doğrulanırken (yükleniyor) ya da sunucuya ulaşılamadığında (yeniden dene). */
 export function BootScreen({
@@ -26,7 +27,20 @@ export function BootScreen({
       }}
     >
       {offline ? (
-        <>
+        <Enter style={{ alignItems: "center" }}>
+          <View
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 22,
+              backgroundColor: "#FDECEA",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 16,
+            }}
+          >
+            <WifiOff size={28} color={C.error} />
+          </View>
           <T f="h" style={{ fontSize: 20, marginBottom: 8 }}>
             Bağlanılamadı
           </T>
@@ -46,9 +60,16 @@ export function BootScreen({
               </T>
             </Press>
           )}
-        </>
+        </Enter>
       ) : (
-        <ActivityIndicator color={C.tide} />
+        <View style={{ alignItems: "center", justifyContent: "center", width: 120, height: 120 }}>
+          <View style={{ position: "absolute" }}>
+            <Ripple size={120} color={C.tide} rings={2} />
+          </View>
+          <Pulse to={1.1} duration={800}>
+            <Logo size={52} />
+          </Pulse>
+        </View>
       )}
     </View>
   );

@@ -8,7 +8,7 @@ import { absoluteUrl } from "@/config";
 import { errorMessage } from "@/api/errors";
 import { useAvatar, useProfile, useUpdateProfile } from "@/queries";
 import { colorFor, initialsOf } from "@/utils/user";
-import { Avatar, Chip, Field, GradBtn, Press, T } from "@/components/ui";
+import { Avatar, Chip, Field, GradBtn, Press, Skeleton, T } from "@/components/ui";
 
 /** Avatar + ad + hakkımda. Sunucudaki /me/profile'dan beslenir. */
 export function ProfileHeader({ showToast }: { showToast: (m: string) => void }) {
@@ -29,9 +29,11 @@ export function ProfileHeader({ showToast }: { showToast: (m: string) => void })
 
   if (!profile) {
     return (
-      <T style={{ color: C.muted, fontSize: 12, paddingVertical: 24 }}>
-        {profileQ.isError ? errorMessage(profileQ.error) : "Yükleniyor…"}
-      </T>
+profileQ.isError ? (
+        <T style={{ color: C.error, fontSize: 12, paddingVertical: 24 }}>{errorMessage(profileQ.error)}</T>
+      ) : (
+        <View style={{ gap: 10, paddingVertical: 16 }}><Skeleton style={{ height: 72, width: 72, borderRadius: 36 }} /><Skeleton style={{ height: 18, width: 160 }} /><Skeleton style={{ height: 12, width: 220 }} /></View>
+      )
     );
   }
 

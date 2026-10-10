@@ -11,3 +11,5 @@ export * from "./Toast";
 export * from "./Sheet";
 export * from "./GridBg";
 export * from "./FadeLine";
+export * from "./motion";
+export * from "./Logo";

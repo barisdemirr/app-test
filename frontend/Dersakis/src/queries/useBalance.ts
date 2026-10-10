@@ -4,5 +4,9 @@ import { queryKeys } from "./keys";
 
 /** Bakiye tek anahtarda tutulur; cevaplardaki `balance` setQueryData ile buraya yazılır. */
 export function useBalance() {
-  return useQuery({ queryKey: queryKeys.balance, queryFn: fetchBalance, staleTime: 0 });
+  return useQuery({
+    queryKey: queryKeys.balance, queryFn: fetchBalance, staleTime: 0,
+    // iade, otomatik onay, kazanç gibi arka plan değişiklikleri kendiliğinden görünsün
+    refetchInterval: 30_000,
+  });
 }

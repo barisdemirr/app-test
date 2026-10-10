@@ -1,9 +1,22 @@
 import React from "react";
-import { FlatList } from "react-native";
-import { C } from "@/theme";
+import { FlatList, View } from "react-native";
+import { WifiOff } from "lucide-react-native";
+import { C, fin } from "@/theme";
 import type { LiveSessionDto } from "@/api/types";
-import { SectionTitle, T } from "@/components/ui";
+import { Enter, SectionTitle, Skeleton, T } from "@/components/ui";
 import { LiveCard } from "./LiveCard";
+
+function SkeletonCard() {
+  return (
+    <View style={[fin, { width: 286, backgroundColor: "#fff", overflow: "hidden", padding: 15, gap: 12 }]}>
+      <Skeleton style={{ height: 80, borderRadius: 16 }} />
+      <Skeleton style={{ height: 16, width: "75%" }} />
+      <Skeleton style={{ height: 12, width: "95%" }} />
+      <Skeleton style={{ height: 12, width: "60%" }} />
+      <Skeleton style={{ height: 40, borderRadius: 14 }} />
+    </View>
+  );
+}
 
 /** Ana sayfadaki yatay ilan şeridi. */
 export function LiveShelf({
@@ -13,8 +26,10 @@ export function LiveShelf({
   loading,
   error,
   empty,
+  emptyAction,
   onSeeAll,
   onOpen,
+  onJoin,
 }: {
   title: string;
   action?: string;
@@ -23,20 +38,57 @@ export function LiveShelf({
   /** Liste yüklenemedi (ağ/sunucu): boş durumdan ayrı gösterilir */
   error?: boolean;
   empty: string;
+  /** Boş durumda gösterilecek eylem (örn. "＋ Eğitim ver") */
+  emptyAction?: React.ReactNode;
   onSeeAll?: () => void;
   onOpen: (id: string) => void;
+  onJoin?: (s: LiveSessionDto) => void;
 }) {
   return (
     <>
-      <SectionTitle title={title} action={action} onAction={onSeeAll} />
+      <SectionTitle title={title} action={items.length > 0 ? action : undefined} onAction={onSeeAll} />
       {loading ? (
-        <T style={{ color: C.muted, fontSize: 12 }}>Yükleniyor…</T>
+        <FlatList
+          horizontal
+          scrollEnabled={false}
+          data={[0, 1]}
+          keyExtractor={(i) => String(i)}
+          style={{ marginHorizontal: -20 }}
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 13 }}
+          renderItem={() => <SkeletonCard />}
+        />
       ) : error && items.length === 0 ? (
-        <T style={{ color: C.error, fontSize: 12 }}>
-          Liste yüklenemedi. Ekranı aşağı çekip yenile.
-        </T>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+            padding: 14,
+            borderRadius: 16,
+            backgroundColor: "#FDECEA",
+          }}
+        >
+          <WifiOff size={18} color={C.error} />
+          <T style={{ color: C.error, fontSize: 12, flex: 1 }}>
+            Liste yüklenemedi. Ekranı aşağı çekip yenile.
+          </T>
+        </View>
       ) : items.length === 0 ? (
-        <T style={{ color: C.muted, fontSize: 12 }}>{empty}</T>
+        <View
+          style={{
+            padding: 16,
+            borderRadius: 18,
+            backgroundColor: "#fff",
+            borderWidth: 1,
+            borderColor: C.mist,
+            borderStyle: "dashed",
+            gap: 12,
+            alignItems: "flex-start",
+          }}
+        >
+          <T style={{ color: C.muted, fontSize: 12.5 }}>{empty}</T>
+          {emptyAction}
+        </View>
       ) : (
         <FlatList
           horizontal
@@ -47,7 +99,11 @@ export function LiveShelf({
           decelerationRate="fast"
           style={{ marginHorizontal: -20 }}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 14, gap: 13 }}
-          renderItem={({ item }) => <LiveCard s={item} onOpen={onOpen} />}
+          renderItem={({ item, index }) => (
+            <Enter delay={Math.min(index, 4) * 80} y={20}>
+              <LiveCard s={item} onOpen={onOpen} onJoin={onJoin} />
+            </Enter>
+          )}
         />
       )}
     </>

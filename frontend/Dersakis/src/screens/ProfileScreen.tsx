@@ -16,7 +16,7 @@ import {
   ProfileHeader,
   StatsSection,
 } from "@/components/profile";
-import { Chip, GradBtn, SectionTitle, T } from "@/components/ui";
+import { Chip, GradBtn, SectionTitle, Skeleton, T } from "@/components/ui";
 
 export type ProfileScreenProps = {
   bodyPad: number;
@@ -84,7 +84,7 @@ export function ProfileScreen(p: ProfileScreenProps) {
       <SectionTitle title="Kaydettiğim videolar" />
       {savedQ.isLoading ? (
         <View style={{ padding: 15, borderRadius: 17, backgroundColor: "#fff" }}>
-          <T style={{ color: C.muted, fontSize: 12 }}>Yükleniyor…</T>
+          <Skeleton style={{ height: 40, borderRadius: 12 }} />
         </View>
       ) : savedItems.length === 0 ? (
         <View style={{ padding: 15, borderRadius: 17, backgroundColor: "#fff" }}>

@@ -4,11 +4,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import {
   ChevronDown,
-  PlayCircle,
+  ChevronRight,
+  GraduationCap,
+  History,
+  Mic,
   Search,
   Sparkles,
 } from "lucide-react-native";
-import { C, DIAG, FONT, fin, G_PRIMARY, SH } from "@/theme";
+import { C, DIAG, FONT, fin, G_CORAL, G_PRIMARY, SH } from "@/theme";
 import type { LiveSessionDto } from "@/api/types";
 import { ActiveStrip, LiveShelf } from "@/components/live";
 import type { QaQuestion } from "@/api/qa";
@@ -16,12 +19,14 @@ import { colorFor, initialsOf } from "@/utils/user";
 import { useCourseNames } from "@/queries";
 import { FACTS } from "@/constants/facts";
 import {
+  AnimatedNumber,
   Avatar,
   Chip,
+  Enter,
   GradBtn,
-  MiniPill,
   Press,
   SectionTitle,
+  Skeleton,
   Sonar,
   T,
 } from "@/components/ui";
@@ -44,6 +49,7 @@ export type HomeScreenProps = {
   refreshing: boolean;
   onRefresh: () => void;
   onOpenSession: (id: string) => void;
+  onJoinSession: (s: LiveSessionDto) => void;
   onCreateVoice: () => void;
   onCreateLesson: () => void;
   filteredQuestions: QaQuestion[];
@@ -57,6 +63,49 @@ export type HomeScreenProps = {
   onOpenQuestion: (q: QaQuestion) => void;
   onOpenAsk: () => void;
 };
+
+function ActionTile({
+  colors,
+  icon,
+  title,
+  sub,
+  onPress,
+}: {
+  colors: readonly [string, string];
+  icon: React.ReactNode;
+  title: string;
+  sub: string;
+  onPress: () => void;
+}) {
+  return (
+    <Press
+      onPress={onPress}
+      style={[{ flex: 1, borderRadius: 20, overflow: "hidden", padding: 14, minHeight: 92, justifyContent: "space-between" }, SH.soft]}
+    >
+      <LinearGradient colors={colors} {...DIAG} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }} />
+      <View
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 12,
+          backgroundColor: "rgba(255,255,255,.24)",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {icon}
+      </View>
+      <View>
+        <T f="h" style={{ color: "#fff", fontSize: 15 }} numberOfLines={1}>
+          {title}
+        </T>
+        <T style={{ color: "rgba(255,255,255,.88)", fontSize: 10.5, marginTop: 1 }} numberOfLines={1}>
+          {sub}
+        </T>
+      </View>
+    </Press>
+  );
+}
 
 export function HomeScreen(p: HomeScreenProps) {
   const courses = useCourseNames();
@@ -87,6 +136,7 @@ export function HomeScreen(p: HomeScreenProps) {
         <RefreshControl refreshing={p.refreshing} onRefresh={p.onRefresh} tintColor={C.tide} />
       }
     >
+      <Enter y={10}>
       <LinearGradient
         colors={[C.abyss, C.deep, "#28A6CB"]}
         locations={[0.02, 0.55, 1]}
@@ -106,7 +156,7 @@ export function HomeScreen(p: HomeScreenProps) {
         <View
           style={{ position: "absolute", right: 20, top: 30, opacity: 0.45 }}
         >
-          <Sonar size={120} />
+          <Sonar size={120} animated />
         </View>
         <View
           style={{
@@ -162,9 +212,7 @@ export function HomeScreen(p: HomeScreenProps) {
         >
           <T style={{ fontSize: 11, color: "#EAF5FF" }}>
             ✦{" "}
-            <T f="bb" style={{ fontSize: 11, color: "#EAF5FF" }}>
-              {p.credits}
-            </T>{" "}
+            <AnimatedNumber value={p.credits} f="bb" style={{ fontSize: 11, color: "#EAF5FF" }} />{" "}
             kredi
           </T>
           <T style={{ fontSize: 11, color: "#EAF5FF" }}>
@@ -193,6 +241,49 @@ export function HomeScreen(p: HomeScreenProps) {
           />
         </Svg>
       </LinearGradient>
+      </Enter>
+
+      {/* hızlı eylemler */}
+      <Enter delay={90}>
+        <View style={{ flexDirection: "row", gap: 11, marginTop: 14 }}>
+          <ActionTile
+            colors={G_CORAL}
+            icon={<Mic size={20} color="#fff" />}
+            title="Sesli soru sor"
+            sub="Anında birine sor"
+            onPress={p.onCreateVoice}
+          />
+          <ActionTile
+            colors={G_PRIMARY}
+            icon={<GraduationCap size={21} color="#fff" />}
+            title="Eğitim ver"
+            sub="Bilgini paylaş, kazan"
+            onPress={p.onCreateLesson}
+          />
+        </View>
+        <Press
+          onPress={() => p.onOpenList("mine")}
+          style={{
+            marginTop: 9,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 9,
+            paddingHorizontal: 14,
+            minHeight: 44,
+            borderRadius: 14,
+            backgroundColor: "#fff",
+            borderWidth: 1,
+            borderColor: C.mist,
+          }}
+        >
+          <History size={16} color={C.tide} />
+          <T f="bs" style={{ fontSize: 12.5, flex: 1 }}>
+            Oturumlarım
+          </T>
+          <T style={{ fontSize: 11, color: C.muted }}>geçmiş dahil</T>
+          <ChevronRight size={16} color={C.muted} />
+        </Press>
+      </Enter>
 
       {/* arama */}
       <View style={{ flexDirection: "row", gap: 9, marginTop: 17 }}>
@@ -262,7 +353,12 @@ export function HomeScreen(p: HomeScreenProps) {
       </ScrollView>
 
       {/* DEVAM EDEN / YAKLAŞAN */}
-      <ActiveStrip items={p.activeSessions} onOpen={p.onOpenSession} />
+      <ActiveStrip
+        items={p.activeSessions}
+        onOpen={p.onOpenSession}
+        onJoin={p.onJoinSession}
+        onSeeAll={() => p.onOpenList("mine")}
+      />
 
       {/* SESLİ SORULAR */}
       <LiveShelf
@@ -272,12 +368,13 @@ export function HomeScreen(p: HomeScreenProps) {
         items={p.voiceSessions}
         loading={p.liveLoading}
         error={p.liveError}
-        empty="Şu an açık sesli soru yok."
+        empty="Şu an açık sesli soru yok. İlk soruyu sen sor, biri katılınca haber veririz."
+        emptyAction={
+          <GradBtn label="＋ Sesli soru sor" small colors={G_CORAL} radius={{ borderRadius: 999 }} onPress={p.onCreateVoice} />
+        }
         onOpen={p.onOpenSession}
+        onJoin={p.onJoinSession}
       />
-      <View style={{ flexDirection: "row", gap: 8, marginTop: -4, marginBottom: 6 }}>
-        <GradBtn label="＋ Sesli soru sor" small colors={G_PRIMARY} radius={{ borderRadius: 999 }} onPress={p.onCreateVoice} />
-      </View>
 
       {/* EĞİTİMLER */}
       <LiveShelf
@@ -287,13 +384,13 @@ export function HomeScreen(p: HomeScreenProps) {
         items={p.lessonSessions}
         loading={p.liveLoading}
         error={p.liveError}
-        empty="Şu an uygun eğitim yok."
+        empty="Şu an satışta eğitim yok. Sen bir eğitim açabilirsin."
+        emptyAction={
+          <GradBtn label="＋ Eğitim ver" small colors={G_PRIMARY} radius={{ borderRadius: 999 }} onPress={p.onCreateLesson} />
+        }
         onOpen={p.onOpenSession}
+        onJoin={p.onJoinSession}
       />
-      <View style={{ flexDirection: "row", gap: 8, marginTop: -4, marginBottom: 6 }}>
-        <GradBtn label="＋ Eğitim ver" small colors={G_PRIMARY} radius={{ borderRadius: 999 }} onPress={p.onCreateLesson} />
-        <GradBtn label="Oturumlarım" small colors={[C.tide, C.tide]} radius={{ borderRadius: 999 }} onPress={() => p.onOpenList("mine")} />
-      </View>
 
       {/* BİLENE SOR */}
       <SectionTitle
@@ -322,7 +419,9 @@ export function HomeScreen(p: HomeScreenProps) {
         />
       </View>
       {p.questionsLoading ? (
-        <T style={{ color: C.muted, fontSize: 12 }}>Yükleniyor…</T>
+        <View style={{ gap: 10 }}>
+          <Skeleton style={{ height: 120, borderRadius: 18 }} />
+        </View>
       ) : p.questionsError && p.filteredQuestions.length === 0 ? (
         <T style={{ color: C.error, fontSize: 12 }}>
           Sorular yüklenemedi. Ekranı aşağı çekip yenile.

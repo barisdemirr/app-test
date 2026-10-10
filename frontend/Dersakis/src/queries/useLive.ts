@@ -13,12 +13,14 @@ import {
   fetchLiveSession,
   fetchLiveSessions,
   reviewLive,
+  type LiveListResponse,
   type LiveScope,
 } from "@/api/live";
 import type { BalanceDto } from "@/api/credits";
 import type { LiveKind, LiveSessionDto } from "@/api/types";
 import { useIdemAction } from "@/hooks/useIdemAction";
 import { pollInterval } from "@/utils/live";
+import { toDate } from "@/utils/time";
 import { queryKeys } from "./keys";
 
 export function useLiveList(o: {
@@ -27,14 +29,19 @@ export function useLiveList(o: {
   courseIds?: string[];
   enabled?: boolean;
   pageSize?: number;
-  refetchMs?: number;
+  /** Sabit aralık ya da veriye göre hesaplanan aralık (ms). Ekran açıkken kendiliğinden yenilenir. */
+  refetchMs?: number | ((items: LiveSessionDto[]) => number | false);
 }) {
   const { kind, scope, courseIds, enabled = true, pageSize = 20, refetchMs } = o;
   return useInfiniteQuery({
     queryKey: queryKeys.liveList(kind ?? "all", scope, courseIds ?? []),
     enabled,
     staleTime: 0,
-    refetchInterval: refetchMs,
+    refetchInterval:
+      typeof refetchMs === "function"
+        ? (q: { state: { data?: { pages: LiveListResponse[] } } }) =>
+            refetchMs((q.state.data?.pages ?? []).flatMap((pg) => pg.items))
+        : refetchMs,
     initialPageParam: 1,
     queryFn: ({ pageParam }) =>
       fetchLiveSessions({ kind, scope, courseIds, page: pageParam, pageSize }),
@@ -118,4 +125,24 @@ export function useReviewLive() {
       v.approve ? approve(v.id) : reject(v.id),
     onSuccess: (r) => sync(r.session),
   });
+}
+
+
+/** Yapılacak bir şeyi olan oturumlar. Yaklaşan/açık bir görüşme varsa sık yoklar (Katıl kaçmasın). */
+export function activeRefetchMs(items: LiveSessionDto[]): number {
+  const now = Date.now();
+  let ms = 15_000;
+  for (const s of items) {
+    if (s.canJoin || s.status === "Pending" || s.status === "Waiting" || s.status === "Live") ms = Math.min(ms, 3_000);
+    else if (s.status === "Booked" && s.scheduledAtUtc) {
+      const left = toDate(s.scheduledAtUtc).getTime() - now;
+      if (left < 150_000) ms = Math.min(ms, 2_500);
+      else if (left < 900_000) ms = Math.min(ms, 8_000);
+    } else if (s.status === "AwaitingApproval") ms = Math.min(ms, 8_000);
+  }
+  return ms;
+}
+
+export function useActiveSessions(enabled = true) {
+  return useLiveList({ scope: "active", pageSize: 20, enabled, refetchMs: activeRefetchMs });
 }

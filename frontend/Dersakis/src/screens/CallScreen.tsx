@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Alert, BackHandler, StyleSheet, View } from "react-native";
 import {
+  ChevronDown,
   Mic,
   MicOff,
   PhoneOff,
@@ -20,7 +21,7 @@ import { loadAgora } from "@/live/agora";
 import { isFinal } from "@/utils/live";
 import { toDate } from "@/utils/time";
 import { colorFor, initialsOf } from "@/utils/user";
-import { Avatar, GradBtn, Press, T } from "@/components/ui";
+import { Avatar, Enter, GradBtn, LiveDot, Press, Pulse, Ripple, T } from "@/components/ui";
 
 export type CallScreenProps = {
   id: string;
@@ -147,7 +148,7 @@ export function CallScreen(p: CallScreenProps) {
   const elapsed =
     s?.liveStartedAtUtc != null ? clock.now() - toDate(s.liveStartedAtUtc).getTime() : null;
 
-  let status = "Bağlanıyor…";
+  let status = call.phase === "failed" ? "Bağlantı kurulamadı" : "Bağlanıyor…";
   if (call.phase === "connected") {
     status = call.reconnecting
       ? "Bağlantı sorunu, yeniden bağlanıyor…"
@@ -167,23 +168,38 @@ export function CallScreen(p: CallScreenProps) {
         <Surface style={StyleSheet.absoluteFill} canvas={{ uid: call.peerUid! }} />
       ) : (
         <View style={styles.center}>
-          {peer && (
-            <Avatar
-              initials={initialsOf(peer.displayName)}
-              color={colorFor(peer.id)}
-              uri={peer.avatarUrl ? absoluteUrl(peer.avatarUrl) : null}
-              size={110}
-            />
-          )}
-          <T f="bb" style={{ color: "#fff", fontSize: 18, marginTop: 14 }}>
+          <View style={{ width: 220, height: 220, alignItems: "center", justifyContent: "center" }}>
+            {call.phase !== "failed" && (
+              <View style={{ position: "absolute" }}>
+                <Ripple size={220} color="rgba(255,255,255,.55)" rings={3} duration={2600} />
+              </View>
+            )}
+            {peer && (
+              <Pulse to={1.04} duration={1400}>
+                <Avatar
+                  initials={initialsOf(peer.displayName)}
+                  color={colorFor(peer.id)}
+                  uri={peer.avatarUrl ? absoluteUrl(peer.avatarUrl) : null}
+                  size={116}
+                />
+              </Pulse>
+            )}
+          </View>
+          <T f="h" style={{ color: "#fff", fontSize: 22, marginTop: 6 }}>
             {peer?.displayName ?? "Karşı taraf"}
           </T>
+          <View style={styles.statusPill}>
+            <LiveDot color={call.phase === "connected" && !call.reconnecting ? "#22B07D" : C.sun} size={7} />
+            <T f="bs" style={{ color: "#fff", fontSize: 12 }}>
+              {status}
+            </T>
+          </View>
         </View>
       )}
 
       {/* ---- yerel önizleme ---- */}
       {video && Surface && call.phase === "connected" && !call.cameraOff && (
-        <View style={[styles.preview, { top: p.topInset + 58 }]}>
+        <View style={[styles.preview, { top: p.topInset + 74 }]}>
           <Surface style={{ flex: 1 }} canvas={{ uid: 0 }} zOrderMediaOverlay />
         </View>
       )}
@@ -191,6 +207,7 @@ export function CallScreen(p: CallScreenProps) {
       {/* ---- üst çubuk ---- */}
       <View style={[styles.top, { paddingTop: p.topInset + 10 }]}>
         <Press onPress={confirmLeave} style={styles.leave}>
+          <ChevronDown size={16} color="#fff" />
           <T f="bb" style={{ color: "#fff", fontSize: 12 }}>
             Küçült
           </T>
@@ -206,12 +223,7 @@ export function CallScreen(p: CallScreenProps) {
       </View>
 
       {/* ---- durum / hata ---- */}
-      <View style={[styles.statusBox, { top: p.topInset + 120 }]}>
-        {call.phase !== "failed" && elapsed != null && (
-          <T style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, textAlign: "center" }}>
-            {status}
-          </T>
-        )}
+      <View style={[styles.statusBox, { top: p.topInset + 74 }]}>
         {call.phase === "connected" && call.peerLeft && (
           <T style={{ color: C.sun, fontSize: 12, textAlign: "center", marginTop: 6 }}>
             Karşı taraf ayrıldı. Görüşmeyi bitirmek ister misin?
@@ -237,6 +249,7 @@ export function CallScreen(p: CallScreenProps) {
 
       {/* ---- kontroller ---- */}
       <View style={[styles.controls, { paddingBottom: p.bottomInset + 18 }]}>
+        <Enter y={30} duration={420} style={{ flexDirection: "row", flex: 1, justifyContent: "space-evenly" }}>
         <RoundBtn
           label={call.muted ? "Sesi aç" : "Sessiz"}
           on={call.muted}
@@ -264,6 +277,7 @@ export function CallScreen(p: CallScreenProps) {
         <RoundBtn label="Bitir" danger onPress={confirmEnd}>
           <PhoneOff size={22} color="#fff" />
         </RoundBtn>
+        </Enter>
       </View>
     </View>
   );
@@ -284,10 +298,23 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(7,20,44,0.45)",
   },
   leave: {
-    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 16,
     backgroundColor: "rgba(255,255,255,0.18)",
+  },
+  statusPill: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.14)",
   },
   preview: {
     position: "absolute",

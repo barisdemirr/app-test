@@ -2,9 +2,8 @@ import React from "react";
 import { View } from "react-native";
 import { Bell } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Path } from "react-native-svg";
 import { C, DIAG, G_PRIMARY, SH } from "@/theme";
-import { Press, Sonar, T } from "@/components/ui";
+import { AnimatedNumber, Logo, Press, Sonar, T } from "@/components/ui";
 
 export type HeaderProps = {
   topInset: number;
@@ -29,30 +28,7 @@ export function Header(p: HeaderProps) {
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
-        <LinearGradient
-          colors={G_PRIMARY}
-          {...DIAG}
-          style={{
-            width: 28,
-            height: 28,
-            borderTopLeftRadius: 14,
-            borderTopRightRadius: 14,
-            borderBottomRightRadius: 14,
-            borderBottomLeftRadius: 5,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Svg width={16} height={10} viewBox="0 0 16 10">
-            <Path
-              d="M1 6 Q4 0 8 5 T15 4"
-              stroke="#fff"
-              strokeWidth={2}
-              fill="none"
-              strokeLinecap="round"
-            />
-          </Svg>
-        </LinearGradient>
+        <Logo size={28} />
         <T f="h" style={{ fontSize: 20, color: C.abyss, letterSpacing: -0.6 }}>
           Dersakış
         </T>
@@ -127,9 +103,12 @@ export function Header(p: HeaderProps) {
             ✦
           </T>
         </LinearGradient>
-        <T f="bb" style={{ fontSize: 11, color: C.abyss }}>
-          {p.credits} kredi
-        </T>
+        <View style={{ flexDirection: "row", alignItems: "baseline", gap: 3 }}>
+          <AnimatedNumber value={p.credits} f="bb" style={{ fontSize: 11, color: C.abyss }} />
+          <T f="bb" style={{ fontSize: 11, color: C.abyss }}>
+            kredi
+          </T>
+        </View>
         <View
           style={{
             width: 35,
